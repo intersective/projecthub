@@ -428,6 +428,7 @@ export default function HomePage() {
             itemWidthClass="w-80"
             autoPlay={false}
             showProgress={false}
+            className="text-white"
           >
             {demoProjects.slice(0, 8).map((project) => (
               <div 

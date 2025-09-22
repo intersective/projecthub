@@ -10,6 +10,7 @@ interface CarouselProps {
   interval?: number;
   showProgress?: boolean;
   heroMode?: boolean;
+  className?: string;
 }
 
 export default function Carousel({ 
@@ -19,7 +20,8 @@ export default function Carousel({
   autoPlay = false,
   interval = 5000,
   showProgress = false,
-  heroMode = false
+  heroMode = false,
+  className = ''
 }: CarouselProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const items = useMemo(() => (Array.isArray(children) ? children : [children]), [children]);
@@ -133,7 +135,7 @@ export default function Carousel({
   }
 
   return (
-    <div className="relative w-full max-w-full">
+    <div className={`relative w-full max-w-full ${className}`}>
       {title && (
         <div className="flex items-center justify-between mb-6 px-4">
           <h3 className="text-2xl font-bold text-foreground dark:text-white">{title}</h3>
