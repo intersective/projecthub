@@ -470,9 +470,9 @@ export default function ManagerProjectsPage() {
         ) : (
           <>
             <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' : 'space-y-4'}>
-              {projects.map((project) => (
+              {projects.map((project,index) => (
               <div
-                key={project.id}
+                key={`${project.id}-${index}`}
                 role="button"
                 tabIndex={0}
                 onClick={() => openEditModal(project)}
