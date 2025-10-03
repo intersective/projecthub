@@ -212,8 +212,8 @@ export abstract class AIService {
   /**
    * Create a timeout promise with cleanup capability
    */
-  private createTimeoutPromise<T>(): { promise: Promise<T>; clear: () => void } {
-    let timeoutId: NodeJS.Timeout | null = null;
+   private createTimeoutPromise<T>(): { promise: Promise<T>; clear: () => void } {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
     
     const promise = new Promise<T>((_, reject) => {
       timeoutId = setTimeout(() => {
@@ -230,7 +230,6 @@ export abstract class AIService {
 
     return { promise, clear };
   }
-
   /**
    * Simple delay utility
    */
