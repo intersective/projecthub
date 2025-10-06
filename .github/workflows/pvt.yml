@@ -1,0 +1,46 @@
+---
+name: Deploy to p2-sandbox
+
+on:
+  push:
+    branches:
+      - pvt
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    permissions: write-all
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    env:
+      REGION: ap-southeast-2
+      ENV: dev
+      STACK_NAME: p2-sandbox
+      ROOTSTACK: projecthub
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.15.0"
+      - name: Cache node modules
+        uses: actions/cache@v4
+        id: cache-node-modules
+        env:
+          cache-name: cache
+        with:
+          # npm cache files are stored in `~/.npm` on Linux/macOS
+          path: |
+            ~/.npm
+            src/node_modules
+            */*/node_modules
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - name: Install dependencies
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run:  cd src && npm ci
