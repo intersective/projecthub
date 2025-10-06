@@ -82,7 +82,7 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - name: sst install
         run: |
-          npm run init
+          cd src && npm run init
       - name: sst deploy
         run: |
-          npm run deploy
+          cd src && npm run deploy
