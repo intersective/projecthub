@@ -13,12 +13,13 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     env:
-      REGION: ap-southeast-2
+      REGION: us-east-1
       ENV: dev
       STACK_NAME: p2-sandbox
       ROOTSTACK: projecthub
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
       ENDPOINT: https://projecthub.p2-sandbox.practera.com
+      CI: true
     steps:
       - uses: actions/checkout@v4
         with:
