@@ -11,6 +11,11 @@ export default $config({
       providers: {
         aws: {
           region: "us-east-1",
+          endpoints: [
+            {
+              dynamodb: "https://dynamodb.us-east-1.amazonaws.com",
+            },
+          ],
         },
       },
     };
