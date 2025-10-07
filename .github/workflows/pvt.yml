@@ -86,5 +86,3 @@ jobs:
       - name: sst deploy
         run: |
           cd src && npm run deploy
-        env:
-          AWS_REGION: us-east-1
