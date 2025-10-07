@@ -8,6 +8,11 @@ export default $config({
       removal: input?.stage === "production" ? "retain" : "remove",
       protect: ["production"].includes(input?.stage),
       home: "aws",
+      providers: {
+        aws: {
+          region: "ap-southeast-2",
+        },
+      },
     };
   },
   async run() {
@@ -26,7 +31,7 @@ export default $config({
         memory: "10240 MB",
       },
       transform: {
-         cdn: (args) => {
+        cdn: (args) => {
           args.defaultCacheBehavior = {
             ...args.defaultCacheBehavior,
             cachePolicyId: "658327ea-f89d-4fab-a63d-7e88639e58f6", // CachingOptimized
