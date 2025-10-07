@@ -5,10 +5,6 @@
 
 declare module "sst" {
   export interface Resource {
-    "ProjectHub": {
-      "type": "sst.aws.Nextjs"
-      "url": string
-    }
   }
 }
 /// <reference path="sst-env.d.ts" />

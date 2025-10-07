@@ -10,10 +10,10 @@ export default $config({
       home: "aws",
       providers: {
         aws: {
-          region: "us-east-1",
+          region: "ap-southeast-2",
           endpoints: [
             {
-              dynamodb: "https://dynamodb.us-east-1.amazonaws.com",
+              dynamodb: "https://dynamodb.ap-southeast-2.amazonaws.com",
             },
           ],
         },
