@@ -87,4 +87,4 @@ jobs:
         run: |
           cd src && npm run deploy
         env:
-          AWS_REGION: ${{ env.REGION }}
+          AWS_REGION: us-east-1
