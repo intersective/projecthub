@@ -81,9 +81,15 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      - name: sst install
-        run: |
-          cd src && npm run init
-      - name: sst deploy
-        run: |
-          cd src && npm run deploy
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-artifact
+          path: src/.env
+          retention-days: 5
+      # - name: sst install
+      #   run: |
+      #     cd src && npm run init
+      # - name: sst deploy
+      #   run: |
+      #     cd src && npm run deploy
