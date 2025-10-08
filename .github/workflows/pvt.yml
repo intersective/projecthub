@@ -59,10 +59,10 @@ jobs:
           region: ${{ env.REGION }}
       - name: .env create
         run: |
-          cat >> env.txt <<EOF
-          OPENAI_API_KEY=$CLOUDFRONT_PRIVATE_KEY
+          cat >> src/.env <<EOF
+          OPENAI_API_KEY=$OPENAI_API_KEY
           EMAIL_USER=rodney@practera.com
-          EMAIL_PASS=$CLOUDFRONT_PRIVATE_KEY
+          EMAIL_PASS=$EMAIL_PASS
           EMAIL_HOST=smtp.gmail.com
           EMAIL_PORT=587
 
@@ -81,18 +81,9 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      - run: |
-          ls -la
-          cd src && ls -la
-      - name: 'Upload Artifact'
-        uses: actions/upload-artifact@v4
-        with:
-          name: my-artifact
-          path: env.txt
-          retention-days: 5
-      # - name: sst install
-      #   run: |
-      #     cd src && npm run init
-      # - name: sst deploy
-      #   run: |
-      #     cd src && npm run deploy
+      - name: sst install
+        run: |
+          cd src && npm run init
+      - name: sst deploy
+        run: |
+          cd src && npm run deploy
