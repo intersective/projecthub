@@ -56,16 +56,15 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "tailwindcss": "^4.1.11",
-    "typescript": "^5.3.0",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.1.0",
     "@testing-library/react": "^14.1.0",
     "@types/jest": "^29.5.0",
-    "@types/node": "^20.10.0",
+    "@types/node": "20.19.19",
     "@types/path-to-regexp": "^1.0.29",
-    "@types/react": "^18.2.0",
+    "@types/react": "18.3.25",
     "@types/react-dom": "^18.2.0",
     "autoprefixer": "^10.4.0",
     "eslint": "^8.55.0",
@@ -75,6 +74,7 @@
     "prisma": "^6.14.0",
     "ts-jest": "^29.4.1",
     "tsx": "^4.20.3",
-    "sst": "3.17.10"
+    "sst": "3.17.10",
+    "typescript": "5.9.3"
   }
 }

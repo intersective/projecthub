@@ -12,6 +12,8 @@ import { ROLES } from "./auth-context";
 // - We enrich the session payload using the customSession plugin so client/server can read RBAC context
 
 export const auth = betterAuth({
+  baseURL: process.env.BETTER_AUTH_URL,
+  trustedOrigins: process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(',') || ["http://localhost:3000"],
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,

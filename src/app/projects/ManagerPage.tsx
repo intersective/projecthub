@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, ROLES } from '@/lib/auth-context';
 import FileDropZone from '@/components/FileDropZone';
 import ProjectDetailModal from '@/components/ProjectDetailModal';
+import { useProjects } from '@/hooks/useProjects';
 
 interface Project {
   id: string;
@@ -52,25 +53,52 @@ const getDifficultyColor = (difficulty: string) => {
   }
 };
 
-export default function ManagerProjectsPage() {
+function useDebouncedValue<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
+function ManagerProjectsPage() {
   const router = useRouter();
   const { setViewAsRole } = useAuth();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalProjects, setTotalProjects] = useState(0);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showDetailModal, setShowDetailModal] = useState(false);
+  
   const [filters, setFilters] = useState({
     industry: '',
     domain: '',
     status: ''
   });
+
+  const debouncedFilters = useDebouncedValue(filters, 300);
+  const projectOptions = useMemo(() => ({
+    industry: debouncedFilters.industry || undefined,
+    domain: debouncedFilters.domain || undefined,
+    status: debouncedFilters.status || undefined,
+    limit: 10
+  }), [debouncedFilters.industry, debouncedFilters.domain, debouncedFilters.status]);
+
+  // Use the custom hook for project data management
+  const {
+    projects,
+    loading,
+    loadingMore,
+    hasMore,
+    totalProjects,
+    error,
+    refetch,
+    loadMore
+  } = useProjects(projectOptions);
+
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFileDropZone, setShowFileDropZone] = useState(false);
@@ -87,73 +115,21 @@ export default function ManagerProjectsPage() {
     learningObjectives: [],
   });
 
-  useEffect(() => {
-    fetchProjects();
-  }, []);
-
-  // Refetch when filters change
-  useEffect(() => {
-    fetchProjects(1, false);
-  }, [filters]);
-
   // Infinite scroll effect
   useEffect(() => {
     const handleScroll = () => {
-      if (window.innerHeight + document.documentElement.scrollTop !== document.documentElement.offsetHeight) {
+      if (loading || loadingMore || !hasMore) {
         return;
       }
-      loadMoreProjects();
+      
+      if (window.innerHeight + document.documentElement.scrollTop >= document.documentElement.offsetHeight - 100) {
+        loadMore();
+      }
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [loadingMore, hasMore, currentPage]);
-
-  const fetchProjects = async (page: number = 1, appendToExisting: boolean = false) => {
-    try {
-      if (page === 1) {
-        setLoading(true);
-      } else {
-        setLoadingMore(true);
-      }
-
-      // Build query parameters
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: '10'
-      });
-
-      // Add filters
-      if (filters.industry) params.append('industry', filters.industry);
-      if (filters.status) params.append('status', filters.status);
-
-      const response = await fetch(`/api/projects?${params}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (appendToExisting && page > 1) {
-          setProjects(prev => [...prev, ...data.projects]);
-        } else {
-          setProjects(data.projects || []);
-        }
-        setHasMore(data.pagination?.hasMore || false);
-        setTotalProjects(data.pagination?.total || 0);
-        setCurrentPage(page);
-      } else {
-        console.error('Failed to fetch projects');
-      }
-    } catch (error) {
-      console.error('Failed to fetch projects:', error);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  };
-
-  const loadMoreProjects = () => {
-    if (!loadingMore && hasMore) {
-      fetchProjects(currentPage + 1, true);
-    }
-  };
+  }, [loading, loadingMore, hasMore, loadMore]);
 
   const handleCreateProject = async () => {
     try {
@@ -169,12 +145,20 @@ export default function ManagerProjectsPage() {
       });
 
       if (response.ok) {
-        await fetchProjects();
+        await refetch();
         setShowCreateModal(false);
         resetForm();
       } else {
-        const error = await response.json();
-        alert(`Failed to create project: ${error.error || 'Unknown error'}`);
+        let errorMessage = 'Unknown error';
+        try {
+          const error = await response.json();
+          errorMessage = error.error || 'Unknown error';
+        } catch (jsonError) {
+          // If response is not JSON, get text content
+          const textError = await response.text();
+          errorMessage = textError || `HTTP ${response.status}: ${response.statusText}`;
+        }
+        alert(`Failed to create project: ${errorMessage}`);
       }
     } catch (error) {
       console.error('Failed to create project:', error);
@@ -195,7 +179,7 @@ export default function ManagerProjectsPage() {
       });
 
       if (response.ok) {
-        await fetchProjects();
+        await refetch();
         setShowEditModal(false);
         setSelectedProject(null);
         resetForm();
@@ -218,7 +202,7 @@ export default function ManagerProjectsPage() {
       });
 
       if (response.ok) {
-        await fetchProjects();
+        await refetch();
         setShowDeleteModal(false);
         setSelectedProject(null);
       } else {
@@ -262,7 +246,7 @@ export default function ManagerProjectsPage() {
       console.log(`Processing ${files.length} files for project extraction`);
       // Files are processed by the FileDropZone component
       // Refresh the projects list to show newly extracted projects
-      await fetchProjects();
+      await refetch();
       setShowFileDropZone(false);
     } catch (error) {
       console.error('Error processing files:', error);
@@ -338,6 +322,28 @@ export default function ManagerProjectsPage() {
   };
 
   // No need for client-side filtering since we're doing server-side filtering
+
+  // Show error message if there's an error
+  if (error) {
+    return (
+      <div className="min-h-[calc(100vh-10rem)] bg-white dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-xl text-red-600 dark:text-red-400 mb-4">
+            Error loading projects
+          </div>
+          <div className="text-gray-600 dark:text-gray-400 mb-4">
+            {error}
+          </div>
+          <button
+            onClick={refetch}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -470,9 +476,9 @@ export default function ManagerProjectsPage() {
         ) : (
           <>
             <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' : 'space-y-4'}>
-              {projects.map((project,index) => (
+              {projects.map((project, index) => (
               <div
-                key={`${project.id}-${index}`}
+                key={project.id}
                 role="button"
                 tabIndex={0}
                 onClick={() => openEditModal(project)}
@@ -571,7 +577,7 @@ export default function ManagerProjectsPage() {
           {hasMore && !loadingMore && projects.length > 0 && (
             <div className="flex justify-center py-8">
               <button
-                onClick={loadMoreProjects}
+                onClick={loadMore}
                 className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
               >
                 Load More Projects
@@ -972,7 +978,8 @@ export default function ManagerProjectsPage() {
           onClose={() => setShowDetailModal(false)}
           // @ts-ignore - extended props supported in component
           onUpdated={(updated: any) => {
-            setProjects((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)));
+            // Trigger a refetch to get updated data
+            refetch();
             setSelectedProject(updated);
           }}
         />
@@ -980,3 +987,5 @@ export default function ManagerProjectsPage() {
     </div>
   );
 }
+
+export default memo(ManagerProjectsPage);

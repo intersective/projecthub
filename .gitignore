@@ -11,3 +11,4 @@ src/project-brief-generator/*
 *.tfstate
 *.tfstate.backup
 .terraformrc
+tsconfig.tsbuildinfo
