@@ -33,7 +33,11 @@
     "install:system": "npx tsx scripts/install.ts",
     "seed": "npx tsx scripts/seed.ts",
     "import:projects": "node scripts/import-projects.js",
-    "extract:batch": "npx tsx scripts/batch-extract-documents.ts"
+    "extract:batch": "npx tsx scripts/batch-extract-documents.ts",
+    "init": "sst install",
+    "deploy": "sst deploy --stage $ENV",
+    "destroy": "sst remove --stage $ENV",
+    "unlock": "sst unlock --stage $ENV"
   },
   "dependencies": {
     "@prisma/client": "^6.14.0",
@@ -70,6 +74,7 @@
     "prisma": "^6.14.0",
     "ts-jest": "^29.4.1",
     "tsx": "^4.20.3",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "sst": "3.17.10"
   }
 }

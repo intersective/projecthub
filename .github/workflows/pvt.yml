@@ -1,0 +1,89 @@
+---
+name: Deploy to p2-sandbox
+
+on:
+  push:
+    branches:
+      - pvt
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    permissions: write-all
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    env:
+      REGION: us-east-1
+      ENV: dev
+      STACK_NAME: p2-sandbox
+      ROOTSTACK: projecthub
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      ENDPOINT: https://projecthub.p2-sandbox.practera.com
+      CI: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.19.0"
+      - name: Cache node modules
+        uses: actions/cache@v4
+        id: cache-node-modules
+        env:
+          cache-name: cache
+        with:
+          # npm cache files are stored in `~/.npm` on Linux/macOS
+          path: |
+            ~/.npm
+            src/node_modules
+            */*/node_modules
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - name: Install dependencies
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: cd src && npm ci
+      - name: Get AWS Organization Number
+        id: AWS_ORG
+        run: |
+          P2SANDBOX=$(echo $AWS_ACCOUNT_ID | jq -r .P2SANDBOX)
+          echo "::add-mask::$P2SANDBOX"
+          echo "P2SANDBOX=$P2SANDBOX" >> $GITHUB_OUTPUT
+      - name: Configure AWS Credentials from P2SANDBOX Account
+        uses: ./.github/actions/aws-oidc
+        with:
+          role-to-assume: arn:aws:iam::${{ steps.AWS_ORG.outputs.P2SANDBOX }}:role/github-restricted-role-to-assume
+          region: ${{ env.REGION }}
+      - name: .env create
+        run: |
+          cat >> src/.env <<EOF
+          OPENAI_API_KEY=$CLOUDFRONT_PRIVATE_KEY
+          EMAIL_USER=rodney@practera.com
+          EMAIL_PASS=$CLOUDFRONT_PRIVATE_KEY
+          EMAIL_HOST=smtp.gmail.com
+          EMAIL_PORT=587
+
+          GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
+          GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
+          ADMIN_USERS="rodney@practera.com,wes@practera.com,megan.sitoy@practera.com"
+          AUTO_REGISTER_DOMAIN="practera.com"
+
+          DATABASE_URL=$DATABASE_URL
+          NEXT_PUBLIC_AUTH_URL=$ENDPOINT
+
+          EOF
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - name: sst install
+        run: |
+          cd src && npm run init
+      - name: sst deploy
+        run: |
+          cd src && npm run deploy
