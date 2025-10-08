@@ -59,3 +59,46 @@ export async function GET(request: NextRequest) {
     });
 }
 
+export async function POST(request: NextRequest) {
+    const session = await auth.api.getSession({
+        headers: await headers()
+    });
+    
+    // if no session, return 401
+    if (!session) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    // if no organizationId, return 400
+    if (!session.currentContext.organizationId) {
+        return NextResponse.json({ error: 'Bad Request' }, { status: 400 });
+    }
+
+    try {
+        const body = await request.json();
+        const projectConcept = new ProjectConcept();
+        
+        // Create the project
+        const result = await projectConcept.create({
+            title: body.title,
+            description: body.description,
+            image: body.image || '',
+            scope: body.scope || '',
+            industry: body.industry,
+            domain: body.domain,
+            difficulty: body.difficulty,
+            estimatedHours: body.estimatedHours,
+            deliverables: body.deliverables || [],
+        });
+
+        if ('error' in result) {
+            return NextResponse.json({ error: result.error }, { status: 400 });
+        }
+
+        return NextResponse.json({ project: result.project }, { status: 201 });
+    } catch (error) {
+        console.error('Failed to create project:', error);
+        return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
+    }
+}
+
