@@ -4,3 +4,5 @@ node_modules
 .sst/
 .open-next/
 project-brief-generator/
+**DS_Store
+src/project-brief-generator/*
