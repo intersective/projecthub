@@ -68,7 +68,7 @@ jobs:
 
           GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
           GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
-          ADMIN_USERS="rodney@practera.com,wes@practera.com,megan.sitoy@practera.com"
+          ADMIN_USERS="rodney@practera.com,wes@practera.com,megan.sitoy@practera.com,shawn@practera.com"
           AUTO_REGISTER_DOMAIN="practera.com"
 
           DATABASE_URL=$DATABASE_URL
