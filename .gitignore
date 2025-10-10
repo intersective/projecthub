@@ -4,3 +4,4 @@ node_modules
 tsconfig.tsbuildinfo
 .sst/
 .open-next/
+src/next-env.d.ts

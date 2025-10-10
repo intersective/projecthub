@@ -87,7 +87,12 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onUpdated
         onUpdated?.(updated);
         setIsEditing(false);
         setForm({});
+      } else {
+        const error = await response.json().catch(() => ({ error: 'Failed to update project' }));
+        alert(error.error || 'Failed to update project');
       }
+    } catch (error) {
+      alert('Failed to update project');
     } finally {
       setSaving(false);
     }
