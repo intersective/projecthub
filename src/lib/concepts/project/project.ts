@@ -15,6 +15,8 @@ export class ProjectConcept {
     estimatedHours: number;
     deliverables: string[];
     fileHash?: string;
+    organizationId?: string;
+    userId?: string;
   }): Promise<{ project: Project } | { error: string }> {
     try {
       // Validate required fields
@@ -22,24 +24,83 @@ export class ProjectConcept {
         return { error: "Title and description are required" };
       }
 
-      const project = await prisma.project.create({
-        data: {
-          title: input.title,
-          description: input.description,
-          image: input.image,
-          scope: input.scope,
-          industry: input.industry,
-          domain: input.domain,
-          difficulty: input.difficulty,
-          estimatedHours: input.estimatedHours,
-          deliverables: input.deliverables,
-          status: "active",
-          aiGenerated: false,
-          fileHash: input.fileHash,
+      // Create project and link to organization in a transaction
+      const result = await prisma.$transaction(async (tx) => {
+        // 1. Create the project
+        const project = await tx.project.create({
+          data: {
+            title: input.title,
+            description: input.description,
+            image: input.image,
+            scope: input.scope,
+            industry: input.industry,
+            domain: input.domain,
+            difficulty: input.difficulty,
+            estimatedHours: input.estimatedHours,
+            deliverables: input.deliverables,
+            status: "active",
+            aiGenerated: false,
+            fileHash: input.fileHash,
+          }
+        });
+
+        // 2. If organizationId provided, create membership and relationship
+        if (input.organizationId) {
+          // Check if project-member role exists, create if not
+          let projectMemberRole = await tx.role.findUnique({
+            where: { id: 'role-project-member' }
+          });
+
+          if (!projectMemberRole) {
+            projectMemberRole = await tx.role.create({
+              data: {
+                id: 'role-project-member',
+                displayName: 'Project Member',
+                description: 'Default role for projects in an organization',
+                scope: 'project',
+                permissions: {
+                  projects: { read: true, update: true }
+                },
+                isActive: true,
+                isBuiltIn: true,
+              }
+            });
+          }
+
+          // Create membership linking project to organization
+          await tx.membership.create({
+            data: {
+              memberEntityType: 'project',
+              memberEntityId: project.id,
+              targetEntityType: 'organization',
+              targetEntityId: input.organizationId,
+              roleEntityId: projectMemberRole.id,
+              status: 'active',
+              isActive: true,
+              joinedAt: new Date(),
+            },
+          });
+
+          // Create relationship for additional metadata
+          await tx.relationship.create({
+            data: {
+              fromEntityType: 'project',
+              fromEntityId: project.id,
+              toEntityType: 'organization',
+              toEntityId: input.organizationId,
+              relationType: 'belongs_to',
+              metadata: {
+                createdBy: input.userId || 'system',
+                createdAt: new Date().toISOString(),
+              },
+            },
+          });
         }
+
+        return project;
       });
 
-      return { project };
+      return { project: result };
     } catch (error) {
       return { error: `Failed to create project: ${error}` };
     }
@@ -174,19 +235,9 @@ export class ProjectConcept {
       // Create relationship between project and organization
       input.onProgress?.('Linking project to organization', 95);
       try {
-        await prisma.relationship.create({
-          data: {
-            fromEntityType: 'project',
-            fromEntityId: project.id,
-            toEntityType: 'organization',
-            toEntityId: input.organizationId,
-            relationType: 'child', // Changed from 'child' to 'belongs_to' for consistency
-            metadata: {
-              createdBy: 'ai_extraction',
-              sourceFile: input.originalFilename,
-              fileHash: fileHash
-            }
-          }
+        await this.ensureProjectOrganizationRelationship({
+          projectId: project.id,
+          organizationId: input.organizationId
         });
       } catch (relationshipError) {
         console.warn('Failed to create project-organization relationship:', relationshipError);
@@ -202,8 +253,30 @@ export class ProjectConcept {
 
   async delete(input: { id: string }): Promise<{ success: boolean } | { error: string }> {
     try {
-      await prisma.project.delete({
-        where: { id: input.id }
+      // Delete project and all its relationships in a transaction
+      await prisma.$transaction(async (tx) => {
+        // 1. Delete memberships where project is a member
+        await tx.membership.deleteMany({
+          where: {
+            memberEntityType: 'project',
+            memberEntityId: input.id,
+          },
+        });
+
+        // 2. Delete relationships involving this project
+        await tx.relationship.deleteMany({
+          where: {
+            OR: [
+              { fromEntityType: 'project', fromEntityId: input.id },
+              { toEntityType: 'project', toEntityId: input.id },
+            ],
+          },
+        });
+
+        // 3. Delete the project itself
+        await tx.project.delete({
+          where: { id: input.id }
+        });
       });
 
       return { success: true };
@@ -315,17 +388,17 @@ export class ProjectConcept {
 
   async _getByOrganization(input: { organizationId: string }): Promise<Project[]> {
     try {
-      // Get project IDs that belong to the organization via relationships
-      const relationships = await prisma.relationship.findMany({
+      // Get project IDs that belong to the organization via memberships
+      const memberships = await prisma.membership.findMany({
         where: {
-          fromEntityType: 'project',
-          toEntityType: 'organization',
-          toEntityId: input.organizationId,
-          relationType: 'child'
+          memberEntityType: 'project',
+          targetEntityType: 'organization',
+          targetEntityId: input.organizationId,
+          status: 'active',
         }
       });
 
-      const projectIds = relationships.map(rel => rel.fromEntityId);
+      const projectIds = memberships.map(m => m.memberEntityId);
 
       if (projectIds.length === 0) {
         return [];
@@ -357,17 +430,17 @@ export class ProjectConcept {
     };
   }): Promise<{ projects: Project[]; total: number; hasMore: boolean }> {
     try {
-      // Get project IDs that belong to the organization via relationships
-      const relationships = await prisma.relationship.findMany({
+      // Get project IDs that belong to the organization via memberships
+      const memberships = await prisma.membership.findMany({
         where: {
-          fromEntityType: 'project',
-          toEntityType: 'organization',
-          toEntityId: input.organizationId,
-          relationType: 'child'
+          memberEntityType: 'project',
+          targetEntityType: 'organization',
+          targetEntityId: input.organizationId,
+          status: 'active',
         }
       });
 
-      const projectIds = relationships.map(rel => rel.fromEntityId);
+      const projectIds = memberships.map(m => m.memberEntityId);
 
       if (projectIds.length === 0) {
         return { projects: [], total: 0, hasMore: false };
@@ -414,17 +487,17 @@ export class ProjectConcept {
 
   async _getIndustryCountByOrganization(input: { organizationId: string }): Promise<{ industry: string, count: number }[]> {
     try {
-      // Get project IDs that belong to the organization via relationships
-      const relationships = await prisma.relationship.findMany({
+      // Get project IDs that belong to the organization via memberships
+      const memberships = await prisma.membership.findMany({
         where: {
-          fromEntityType: 'project',
-          toEntityType: 'organization',
-          toEntityId: input.organizationId,
-          relationType: 'child'
+          memberEntityType: 'project',
+          targetEntityType: 'organization',
+          targetEntityId: input.organizationId,
+          status: 'active',
         }
       });
 
-      const projectIds = relationships.map(rel => rel.fromEntityId);
+      const projectIds = memberships.map(m => m.memberEntityId);
 
       if (projectIds.length === 0) {
         return [];
@@ -467,39 +540,78 @@ export class ProjectConcept {
   async ensureProjectOrganizationRelationship(input: {
     projectId: string;
     organizationId: string;
-  }): Promise<{ success: boolean; relationship?: any } | { error: string }> {
+  }): Promise<{ success: boolean; membership?: any; relationship?: any } | { error: string }> {
     try {
-      // Check if relationship already exists
-      const existingRelationship = await prisma.relationship.findFirst({
+      // Check if membership already exists
+      const existingMembership = await prisma.membership.findFirst({
         where: {
-          fromEntityType: 'project',
-          fromEntityId: input.projectId,
-          toEntityType: 'organization',
-          toEntityId: input.organizationId,
-          relationType: 'child'
+          memberEntityType: 'project',
+          memberEntityId: input.projectId,
+          targetEntityType: 'organization',
+          targetEntityId: input.organizationId,
         }
       });
 
-      if (existingRelationship) {
-        return { success: true, relationship: existingRelationship };
+      if (existingMembership) {
+        return { success: true, membership: existingMembership };
       }
 
-      // Create the relationship
-      const relationship = await prisma.relationship.create({
-        data: {
-          fromEntityType: 'project',
-          fromEntityId: input.projectId,
-          toEntityType: 'organization',
-          toEntityId: input.organizationId,
-          relationType: 'child',
-          metadata: {
-            addedAt: new Date().toISOString(),
-            reason: 'file_upload_association'
-          }
+      // Create membership and relationship in transaction
+      const result = await prisma.$transaction(async (tx) => {
+        // Get or create project-member role
+        let projectMemberRole = await tx.role.findUnique({
+          where: { id: 'role-project-member' }
+        });
+
+        if (!projectMemberRole) {
+          projectMemberRole = await tx.role.create({
+            data: {
+              id: 'role-project-member',
+              displayName: 'Project Member',
+              description: 'Default role for projects in an organization',
+              scope: 'project',
+              permissions: {
+                projects: { read: true, update: true }
+              },
+              isActive: true,
+              isBuiltIn: true,
+            }
+          });
         }
+
+        // Create the membership
+        const membership = await tx.membership.create({
+          data: {
+            memberEntityType: 'project',
+            memberEntityId: input.projectId,
+            targetEntityType: 'organization',
+            targetEntityId: input.organizationId,
+            roleEntityId: projectMemberRole.id,
+            status: 'active',
+            isActive: true,
+            joinedAt: new Date(),
+          }
+        });
+
+        // Create the relationship for metadata
+        const relationship = await tx.relationship.create({
+          data: {
+            fromEntityType: 'project',
+            fromEntityId: input.projectId,
+            toEntityType: 'organization',
+            toEntityId: input.organizationId,
+            relationType: 'belongs_to',
+            metadata: {
+              addedAt: new Date().toISOString(),
+              reason: 'ensure_relationship'
+            }
+          }
+        });
+
+        return { membership, relationship };
       });
 
-      return { success: true, relationship };
+      return { success: true, ...result };
     } catch (error) {
       return { error: `Failed to create project-organization relationship: ${error}` };
     }

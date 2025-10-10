@@ -12,3 +12,4 @@ src/project-brief-generator/*
 *.tfstate.backup
 .terraformrc
 tsconfig.tsbuildinfo
+src/next-env.d.ts
