@@ -35,15 +35,15 @@ export default $config({
         staticEtag: true,
         memory: "10240 MB",
       },
-      transform: {
-        cdn: (args) => {
-          args.defaultCacheBehavior = {
-            ...args.defaultCacheBehavior,
-            cachePolicyId: "658327ea-f89d-4fab-a63d-7e88639e58f6", // CachingOptimized
-            compress: true,
-          };
-        },
-      },
+      // transform: {
+      //   cdn: (args) => {
+      //     args.defaultCacheBehavior = {
+      //       ...args.defaultCacheBehavior,
+      //       cachePolicyId: "658327ea-f89d-4fab-a63d-7e88639e58f6", // CachingOptimized
+      //       compress: true,
+      //     };
+      //   },
+      // },
     });
   },
 });

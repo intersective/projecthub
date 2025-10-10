@@ -60,15 +60,15 @@ jobs:
       - name: .env create
         run: |
           cat >> src/.env <<EOF
-          OPENAI_API_KEY=$CLOUDFRONT_PRIVATE_KEY
+          OPENAI_API_KEY=$OPENAI_API_KEY
           EMAIL_USER=rodney@practera.com
-          EMAIL_PASS=$CLOUDFRONT_PRIVATE_KEY
+          EMAIL_PASS=$EMAIL_PASS
           EMAIL_HOST=smtp.gmail.com
           EMAIL_PORT=587
 
           GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
           GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
-          ADMIN_USERS="rodney@practera.com,wes@practera.com,megan.sitoy@practera.com"
+          ADMIN_USERS="rodney@practera.com,wes@practera.com,megan.sitoy@practera.com,shawn@practera.com,chaw@practera.com,terence@practera.com"
           AUTO_REGISTER_DOMAIN="practera.com"
 
           DATABASE_URL=$DATABASE_URL
