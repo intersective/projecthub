@@ -11,14 +11,14 @@ export async function GET(request: NextRequest) {
         headers: await headers() // you need to pass the headers object.
     });
     const projectConcept = new ProjectConcept();
-    
+
     // if no session, return 401
     if (!session) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     // if no organizationId, return 400
-    if (!session.currentContext.organizationId) {
-        return NextResponse.json({ error: 'Bad Request' }, { status: 400 });
+    if (!session.currentContext?.organizationId) {
+        return NextResponse.json({ error: 'Bad Request - No organization context' }, { status: 400 });
     }
 
     // Parse query parameters for pagination and filtering

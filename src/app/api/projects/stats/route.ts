@@ -14,11 +14,11 @@ export async function GET(request: NextRequest) {
     const session = await auth.api.getSession({
         headers: await headers()
     });
-    
+
     if (!session) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
-    
+
     if (!session.currentContext?.organizationId) {
       return NextResponse.json({ success: false, error: 'Bad Request' }, { status: 400 });
     }

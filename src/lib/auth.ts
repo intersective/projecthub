@@ -31,7 +31,7 @@ export const auth = betterAuth({
       maxAge: 60 * 30, // 30 minutes (increased from 5 minutes)
     },
   },
-  databaseHooks: {  
+  databaseHooks: {
      user: {
       create: {
         after: async (user) => {
@@ -55,7 +55,7 @@ export const auth = betterAuth({
                 targetEntityId: organization?.id,
                 roleEntityId: role?.id,
                 invitedBy: 'system',
-                invitedAt: new Date(),  
+                invitedAt: new Date(),
                 approvedBy: 'system',
                 approvedAt: new Date(),
                 status: 'active',
@@ -73,11 +73,11 @@ export const auth = betterAuth({
         after: async (row: any) => {
           try {
             console.log('Session create hook triggered:', { userId: row.userId, sessionId: row.id });
-            
+
             // Better Auth session row
             const token: string = row.id; // session token
             const userId: string = row.userId;
-            
+
             // Enforce single concept session per user
             console.log('Deleting existing sessions for user:', userId);
             await prisma.session.deleteMany({ where: { userId } });
@@ -93,7 +93,7 @@ export const auth = betterAuth({
               },
               orderBy: { joinedAt: 'asc' },
             });
-            
+
             const campaignMembership = await prisma.membership.findFirst({
               where: {
                 memberEntityType: 'user',
@@ -104,9 +104,9 @@ export const auth = betterAuth({
               orderBy: { joinedAt: 'asc' },
             });
 
-            console.log('Found memberships:', { 
-              org: orgMembership?.targetEntityId, 
-              campaign: campaignMembership?.targetEntityId 
+            console.log('Found memberships:', {
+              org: orgMembership?.targetEntityId,
+              campaign: campaignMembership?.targetEntityId
             });
 
             let currentRole = 'member';
@@ -121,7 +121,7 @@ export const auth = betterAuth({
             context.currentRole = currentRole;
 
             console.log('Creating session with context:', context);
-            
+
             const sessionResult = await prisma.session.create({
               data: {
                 sessionKey: token,
@@ -131,7 +131,7 @@ export const auth = betterAuth({
                 isActive: true,
               },
             });
-            
+
             console.log('Session created successfully:', sessionResult.id);
           } catch (e) {
             console.error('databaseHooks.session.create.after error:', e);
@@ -170,34 +170,34 @@ export const auth = betterAuth({
     customSession(async ({ user, session }) => {
       try {
         console.log('CustomSession plugin called for user:', user.id, user.email);
-        
+
         // Load our concept session by Better Auth userId
         let conceptSession = await prisma.session.findFirst({ where: { userId: session.userId } });
         console.log('Found concept session:', conceptSession ? 'yes' : 'no', conceptSession?.id);
-        
+
         // If no concept session exists, try to create one
         if (!conceptSession) {
           console.log('No concept session found, attempting to create one');
           conceptSession = await ensureSessionContext(session.userId, user.email);
         }
-        
+
         let currentContext: any = {};
         if (conceptSession?.currentContext) {
-          try { 
-            currentContext = JSON.parse(conceptSession.currentContext); 
+          try {
+            currentContext = JSON.parse(conceptSession.currentContext);
             console.log('Parsed currentContext:', currentContext);
           } catch (parseError) {
             console.error('Failed to parse currentContext:', parseError);
           }
         }
-        
+
         // Check admin status
         const isAdmin = await isAdminUser(user.email);
         console.log('Is admin user?', isAdmin);
         if (isAdmin) {
           currentContext.currentRole = 'platform_admin';
         }
-        
+
         // Derive effectiveRole from currentRole / Role table
         let effectiveRole = { name: 'guest', displayName: 'Guest', scope: 'organization', permissions: {} as Record<string, any> };
         if (currentContext.currentRole) {
@@ -212,21 +212,22 @@ export const auth = betterAuth({
             console.log('No role record found, using default');
           }
         }
-        
+
         // get memberships for the user
         const memberships = await prisma.membership.findMany({ where: { memberEntityType: 'user', memberEntityId: user.id, targetEntityType: 'organization', isActive: true } });
         console.log('Found memberships:', memberships.length);
-        
+
         const availableOrganizations = await prisma.organization.findMany({ where: { id: { in: memberships.map(m => m.targetEntityId) } } });
         console.log('Found organizations:', availableOrganizations.length);
-        
+
         const result = { user, session, currentContext, effectiveRole, availableOrganizations };
-        console.log('CustomSession returning:', { 
-          hasContext: !!currentContext.organizationId, 
+        console.log('CustomSession returning:', {
+          hasContext: !!currentContext.organizationId,
           role: effectiveRole.name,
-          orgCount: availableOrganizations.length 
+          orgCount: availableOrganizations.length,
+          currentContext: currentContext
         });
-        
+
         return result as any;
       } catch (error) {
         console.error('CustomSession error:', error);
@@ -258,7 +259,7 @@ export async function isAutoRegisterDomain(domain: string): Promise<boolean> {
 export async function ensureSessionContext(userId: string, userEmail: string) {
   try {
     console.log('Ensuring session context for user:', userId);
-    
+
     // Check if concept session already exists
     const existingSession = await prisma.session.findFirst({ where: { userId } });
     if (existingSession) {
@@ -267,7 +268,7 @@ export async function ensureSessionContext(userId: string, userEmail: string) {
     }
 
     console.log('Creating missing session context');
-    
+
     // Look up user's memberships
     const orgMembership = await prisma.membership.findFirst({
       where: {
@@ -278,7 +279,7 @@ export async function ensureSessionContext(userId: string, userEmail: string) {
       },
       orderBy: { joinedAt: 'asc' },
     });
-    
+
     const campaignMembership = await prisma.membership.findFirst({
       where: {
         memberEntityType: 'user',
@@ -317,7 +318,7 @@ export async function ensureSessionContext(userId: string, userEmail: string) {
 
     console.log('Session context created:', session.id);
     return session;
-    
+
   } catch (error) {
     console.error('Failed to ensure session context:', error);
     return null;
@@ -328,11 +329,11 @@ export async function ensureSessionContext(userId: string, userEmail: string) {
 export async function getCurrentUser(request: Request) {
   // Async: session lookup via Better Auth
   const session = await auth.api.getSession({ headers: request.headers });
-  
+
   if (!session) {
     return null;
   }
-  
+
   // For better-auth integration, we return the session user
   // Extended user data will be handled by the sync bridge
   return {
