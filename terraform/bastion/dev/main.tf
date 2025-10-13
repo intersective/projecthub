@@ -80,5 +80,17 @@ resource "aws_instance" "bastion" {
               chmod 700 /home/ubuntu/.ssh
               chmod 600 /home/ubuntu/.ssh/authorized_keys
               chown -R ubuntu:ubuntu /home/ubuntu/.ssh
+
+              apt-get update
+              apt-get install -y wget gnupg2 lsb-release
+
+              wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+              echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+              
+              apt-get update
+              apt-get install -y postgresql-client-15
+              
+              psql --version
+
               EOF
 }
