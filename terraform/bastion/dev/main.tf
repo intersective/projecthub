@@ -33,12 +33,25 @@ data "aws_subnets" "public" {
   }
 }
 
+resource "random_shuffle" "public_subnet" {
+  input        = data.aws_subnets.public.ids
+  result_count = 1
+}
+
+
 data "aws_subnet" "public" {
-  id = data.aws_subnets.public.ids[0]
+  id = random_shuffle.public_subnet.result[0]
+}
+  
+data "aws_security_group" "db_server_sg" {
+  filter {
+    name   = "tag:Name"
+    values = ["${var.stack_name}-DBServerSecurityGroup-${var.environment}"]
+  }
 }
 
 resource "aws_security_group" "allow_ssh" {
-  name        = "allow_ssh"
+  name        = "${var.stack_name}-ProjectHubBastion-${var.environment}"
   description = "Allow SSH inbound traffic"
   vpc_id      = data.aws_vpc.vpc.id
 
@@ -58,6 +71,16 @@ resource "aws_security_group" "allow_ssh" {
   }
 
   tags = var.tags
+}
+
+resource "aws_security_group_rule" "db_inbound_rule" {
+  type                     = "ingress"
+  from_port                = 5432 # Example: PostgreSQL port
+  to_port                  = 5432
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.allow_ssh.id
+  description              = "Allow PostgreSQL traffic from VPC"
+  security_group_id        = data.aws_security_group.db_server_sg.id
 }
 
 # EC2 Instance
