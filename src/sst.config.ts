@@ -35,15 +35,13 @@ export default $config({
         staticEtag: true,
         memory: "10240 MB",
       },
-      // transform: {
-      //   cdn: (args) => {
-      //     args.defaultCacheBehavior = {
-      //       ...args.defaultCacheBehavior,
-      //       cachePolicyId: "658327ea-f89d-4fab-a63d-7e88639e58f6", // CachingOptimized
-      //       compress: true,
-      //     };
-      //   },
-      // },
+      vpc: {
+        securityGroups: ["sg-0846b7ca45b7f9976"],
+        privateSubnets: [
+          "subnet-0ee870de228a77c3f",
+          "subnet-0b9eacd8128764a6b",
+        ],
+      },
     });
   },
 });
