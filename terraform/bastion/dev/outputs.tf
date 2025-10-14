@@ -5,5 +5,5 @@ output "instance_public_ip" {
 
 output "ssh_command" {
   description = "SSH command to connect"
-  value       = "ssh -i key/<your-private-key> ubuntu@${aws_instance.bastion.public_ip}"
+  value       = "ssh ubuntu@${aws_instance.bastion.public_ip}"
 }
