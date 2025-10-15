@@ -13,12 +13,13 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     env:
-      REGION: us-east-1
+      REGION: ap-southeast-2
       ENV: dev
       STACK_NAME: p2-sandbox
       ROOTSTACK: projecthub
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-      ENDPOINT: https://projecthub.p2-sandbox.practera.com
+      ENDPOINT: projecthub.p2-sandbox.practera.com
+      ACM_NAME: cdn.p2-sandbox.practera.com
       CI: true
     steps:
       - uses: actions/checkout@v4
@@ -72,7 +73,7 @@ jobs:
           AUTO_REGISTER_DOMAIN="practera.com"
 
           DATABASE_URL=$DATABASE_URL
-          NEXT_PUBLIC_AUTH_URL=$ENDPOINT
+          NEXT_PUBLIC_AUTH_URL=https://$ENDPOINT
 
           EOF
         env:

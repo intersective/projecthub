@@ -1,6 +1,12 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="./.sst/platform/config.d.ts" />
 
+const region = (process.env.REGION || "ap-southeast-2") as aws.Region;
+const acmName = process.env.ACM_NAME || "cdn.p2-sandbox.practera.com";
+const stackName = process.env.STACK_NAME || "p2-sandbox";
+const environment = process.env.ENV || "dev";
+const endpoint = process.env.ENDPOINT || "projecthub.p2-sandbox.practera.com";
+
 export default $config({
   app(input) {
     return {
@@ -10,10 +16,10 @@ export default $config({
       home: "aws",
       providers: {
         aws: {
-          region: "ap-southeast-2",
+          region: region,
           endpoints: [
             {
-              dynamodb: "https://dynamodb.ap-southeast-2.amazonaws.com",
+              dynamodb: `https://dynamodb.${region}.amazonaws.com`,
             },
           ],
         },
@@ -21,6 +27,48 @@ export default $config({
     };
   },
   async run() {
+    // certificate must be in us-east-1 for cloudfront
+    const usEast1Provider = new aws.Provider("us-east-1-provider", {
+      region: "us-east-1",
+    });
+
+    const certificate = await aws.acm.getCertificate(
+      {
+        domain: acmName,
+        statuses: ["ISSUED"],
+        mostRecent: true,
+      },
+      { provider: usEast1Provider }
+    );
+
+    // security group
+    const securityGroup = await aws.ec2.getSecurityGroup({
+      filters: [
+        {
+          name: "tag:Name",
+          values: [`${stackName}-DBClientSecurityGroup-${environment}`],
+        },
+      ],
+    });
+
+    // private subnets
+    const privateSubnets = await aws.ec2.getSubnets({
+      filters: [
+        {
+          name: "tag:Env",
+          values: [environment],
+        },
+        {
+          name: "tag:Reach",
+          values: ["private"],
+        },
+        {
+          name: "tag:StackName",
+          values: [stackName],
+        },
+      ],
+    });
+
     new sst.aws.Nextjs("ProjectHub", {
       dev: false,
       invalidation: {
@@ -28,19 +76,19 @@ export default $config({
         wait: true,
       },
       domain: {
-        name: "projecthub.p2-sandbox.practera.com",
-        cert: "arn:aws:acm:us-east-1:977349090554:certificate/b5d27c49-7fc5-4357-8a4c-83e7329b01cf",
+        name: endpoint,
+        cert: certificate.arn,
       },
       imageOptimization: {
         staticEtag: true,
-        memory: "10240 MB",
+        memory: "1 GB",
+      },
+      environment: {
+        SG_ID: securityGroup.id,
       },
       vpc: {
-        securityGroups: ["sg-0846b7ca45b7f9976"],
-        privateSubnets: [
-          "subnet-0ee870de228a77c3f",
-          "subnet-0b9eacd8128764a6b",
-        ],
+        securityGroups: [securityGroup.id],
+        privateSubnets: privateSubnets.ids,
       },
     });
   },
