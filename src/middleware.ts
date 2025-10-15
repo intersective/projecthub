@@ -28,9 +28,19 @@ export function middleware(request: NextRequest) {
 
   // Public routes that don't require auth
   const publicRoutes = ['/login', '/register'];
-  const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith(route) || pathname === '/');
+  
+  // Learner-specific public routes (landing, register, login)
+  const learnerPublicRoutes = [
+    '/learner',
+    '/learner/register', 
+    '/learner/login',
+  ];
+  
+  // Check if it's a public route or learner public route
+  const isPublicRoute = publicRoutes.some(route => pathname === route) || pathname === '/';
+  const isLearnerPublicRoute = learnerPublicRoutes.some(route => pathname === route);
 
-  if (isPublicRoute) {
+  if (isPublicRoute || isLearnerPublicRoute) {
     console.log(`✅ Skipping middleware for public route: ${pathname}`);
     return NextResponse.next();
   }
@@ -50,8 +60,11 @@ export function middleware(request: NextRequest) {
   });
 
   if (!sessionToken) {
-    console.log(`❌ Redirecting ${pathname} to /login - no session`);
-    return NextResponse.redirect(new URL('/login', request.url));
+    // Redirect learner routes to learner login, everything else to admin login
+    const isLearnerRoute = pathname.startsWith('/learner/');
+    const loginUrl = isLearnerRoute ? '/learner/login' : '/login';
+    console.log(`❌ Redirecting ${pathname} to ${loginUrl} - no session`);
+    return NextResponse.redirect(new URL(loginUrl, request.url));
   }
 
   // Optional: enforce coarse role gating by reading a hint from a header if upstream set it.
