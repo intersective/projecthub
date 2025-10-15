@@ -1,6 +1,7 @@
 node_modules
 .next
-.env*
+.env
+.env.local
 tsconfig.tsbuildinfo
 .sst/
 .open-next/
@@ -15,3 +16,6 @@ src/project-brief-generator/*
 .terraformrc
 tsconfig.tsbuildinfo
 src/next-env.d.ts
+
+# Local uploads (development only)
+src/public/uploads/

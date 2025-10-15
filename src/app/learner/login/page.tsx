@@ -38,6 +38,22 @@ export default function LearnerLoginPage() {
     setState(prev => ({ ...prev, status: 'submitting', error: undefined, message: undefined }));
 
     try {
+      // First check if user exists
+      const checkResponse = await fetch('/api/auth/check-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: state.email.toLowerCase().trim() }),
+      });
+
+      const checkData = await checkResponse.json();
+
+      // If user doesn't exist, redirect to registration
+      if (!checkData.exists) {
+        router.push(`/learner/register?email=${encodeURIComponent(state.email)}`);
+        return;
+      }
+
+      // User exists, proceed with sending OTP
       const result = await sendEmailOtp(state.email.toLowerCase().trim(), 'sign-in');
 
       if (result.error) {
@@ -77,6 +93,19 @@ export default function LearnerLoginPage() {
           error: result.error.message || 'Invalid verification code' 
         }));
       } else {
+        // Check if this is a newly registered user and assign learner role
+        try {
+          await fetch('/api/auth/learner-signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: state.email.toLowerCase().trim(),
+            })
+          });
+        } catch (roleError) {
+          console.warn('[Learner] Role assignment check failed:', roleError);
+        }
+
         setState(prev => ({ ...prev, status: 'success' }));
         // Navigation is handled inside verifyEmailOtp via window.location.replace
         return;

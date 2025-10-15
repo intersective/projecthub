@@ -14,10 +14,6 @@ import { ROLES } from "./auth-context";
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
   trustedOrigins: process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(',') || ["http://localhost:3000"],
-  emailAndPassword: {
-    enabled: true,
-    requireEmailVerification: process.env.REQUIRE_EMAIL_VERIFICATION === 'true',
-  },
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID!,
