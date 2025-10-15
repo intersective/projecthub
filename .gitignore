@@ -1,8 +1,10 @@
 node_modules
 .next
 .env*
+tsconfig.tsbuildinfo
 .sst/
 .open-next/
+src/next-env.d.ts
 project-brief-generator/
 **DS_Store
 src/project-brief-generator/*
