@@ -83,9 +83,6 @@ export default $config({
         staticEtag: true,
         memory: "1 GB",
       },
-      environment: {
-        SG_ID: securityGroup.id,
-      },
       vpc: {
         securityGroups: [securityGroup.id],
         privateSubnets: privateSubnets.ids,
