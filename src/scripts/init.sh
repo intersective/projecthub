@@ -141,7 +141,7 @@ check_directory() {
 install_dependencies() {
     print_status "Installing/updating dependencies..."
     
-    if npm install; then
+    if pnpm install --frozen-lockfile; then
         print_success "Dependencies installed successfully"
     else
         print_error "Failed to install dependencies"
