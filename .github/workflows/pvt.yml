@@ -28,25 +28,25 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20.19.0"
-      - name: Cache node modules
-        uses: actions/cache@v4
-        id: cache-node-modules
-        env:
-          cache-name: cache
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
         with:
-          # npm cache files are stored in `~/.npm` on Linux/macOS
-          path: |
-            ~/.npm
-            src/node_modules
-            */*/node_modules
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package.json') }}
+          version: 10
+          run_install: false
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+      - uses: actions/cache@v4
+        name: Setup pnpm cache
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
+            ${{ runner.os }}-pnpm-store-
       - name: Install dependencies
-        if: steps.cache-node-modules.outputs.cache-hit != 'true'
-        run: cd src && npm ci
+        run: |
+          cd src && pnpm install --frozen-lockfile
       - name: Get AWS Organization Number
         id: AWS_ORG
         run: |
