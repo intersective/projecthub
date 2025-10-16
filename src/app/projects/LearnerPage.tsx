@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Carousel from '@/components/Carousel';
 import ProjectDetailModal from '@/components/ProjectDetailModal';
@@ -86,6 +86,7 @@ export default function ProjectsPage() {
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showAiForm, setShowAiForm] = useState(false);
+  const [appliedProjects, setAppliedProjects] = useState<Record<string, string>>({});
   const [filters, setFilters] = useState({
     difficulty: '',
     industry: '',
@@ -111,8 +112,23 @@ export default function ProjectsPage() {
     estimatedHours: 20
   });
 
+  // Track industries currently being loaded to prevent duplicate API calls
+  const loadingIndustriesRef = useRef<Set<string>>(new Set());
+  // Track industries that have already been triggered for loading (persists across re-renders)
+  const loadedIndustriesRef = useRef<Set<string>>(new Set());
+  // Track if initial data has been loaded (prevents duplicate initialization in StrictMode)
+  const initializedRef = useRef(false);
+
   useEffect(() => {
+    // Prevent duplicate initialization in React StrictMode
+    if (initializedRef.current) {
+      return;
+    }
+    
+    initializedRef.current = true;
+    
     fetchIndustryStats();
+    fetchAppliedProjects();
   }, []);
 
   // Refetch when filters change (for now we'll disable filtering in the new approach)
@@ -122,27 +138,57 @@ export default function ProjectsPage() {
 
   // Lazy loading for industries when they come into view
   useEffect(() => {
+    let scrollTimeout: NodeJS.Timeout;
+
     const handleScroll = () => {
-      const industryElements = document.querySelectorAll('[data-industry]');
-      industryElements.forEach((element) => {
-        const industry = element.getAttribute('data-industry');
-        if (!industry) return;
+      // Debounce scroll events
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        const industryElements = document.querySelectorAll('[data-industry]');
         
-        const rect = element.getBoundingClientRect();
-        const isInView = rect.top < window.innerHeight && rect.bottom > 0;
-        
-        if (isInView) {
-          const section = industrySections[industry];
-          if (section && section.projects.length < 8 && !section.loading) {
-            loadIndustryProjects(industry);
+        industryElements.forEach((element) => {
+          const industry = element.getAttribute('data-industry');
+          if (!industry || loadedIndustriesRef.current.has(industry)) {
+            return;
           }
-        }
-      });
+          
+          const rect = element.getBoundingClientRect();
+          const isInView = rect.top < window.innerHeight && rect.bottom > 0;
+          
+          if (isInView) {
+            const section = industrySections[industry];
+            
+            if (section && section.projects.length < 8 && !section.loading) {
+              loadedIndustriesRef.current.add(industry);
+              loadIndustryProjects(industry);
+            }
+          }
+        });
+      }, 150); // Debounce for 150ms
     };
 
+    // Check on mount and when industrySections changes
+    handleScroll();
+    
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(scrollTimeout);
+    };
   }, [industrySections]);
+
+  // Fetch applied projects for the current user
+  const fetchAppliedProjects = async () => {
+    try {
+      const response = await fetch('/api/applications/applied-projects');
+      if (response.ok) {
+        const data = await response.json();
+        setAppliedProjects(data.appliedProjects || {});
+      }
+    } catch (error) {
+      console.error('Failed to fetch applied projects:', error);
+    }
+  };
 
   // Phase 1: Fetch industry statistics
   const fetchIndustryStats = async () => {
@@ -226,7 +272,9 @@ export default function ProjectsPage() {
   // Phase 2: Load projects for a specific industry (limited to 8 for carousel)
   const loadIndustryProjects = async (industry: string) => {
     const section = industrySections[industry];
-    if (!section || section.loading) {
+    
+    // Check if already loading (using ref for immediate check)
+    if (!section || section.loading || loadingIndustriesRef.current.has(industry)) {
       return;
     }
 
@@ -239,6 +287,9 @@ export default function ProjectsPage() {
     }
 
     try {
+      // Mark as loading in ref immediately
+      loadingIndustriesRef.current.add(industry);
+      
       // Update loading state
       setIndustrySections(prev => ({
         ...prev,
@@ -249,31 +300,38 @@ export default function ProjectsPage() {
       const skipCount = currentCount; // Skip projects we already have
       
       const params = new URLSearchParams({
-        page: (Math.floor(skipCount / 10) + 1).toString(), // Adjust page based on skip count
+        skip: skipCount.toString(), // Use skip parameter instead of page
         limit: additionalProjectsNeeded.toString(),
         industry: industry,
       });
-
+      
       const response = await fetch(`/api/projects?${params}`);
       if (response.ok) {
         const data = await response.json();
         const newProjects = data.projects || [];
         
-        setIndustrySections(prev => ({
-          ...prev,
-          [industry]: {
-            ...prev[industry],
-            projects: [...prev[industry].projects, ...newProjects], // Append new projects
-            loading: false,
-          },
-        }));
+        setIndustrySections(prev => {
+          const updatedProjects = [...prev[industry].projects, ...newProjects];
+          
+          return {
+            ...prev,
+            [industry]: {
+              ...prev[industry],
+              projects: updatedProjects,
+              loading: false,
+            },
+          };
+        });
       }
     } catch (error) {
-      console.error(`Failed to fetch projects for ${industry}:`, error);
+      console.error('Error fetching projects for industry:', error);
       setIndustrySections(prev => ({
         ...prev,
         [industry]: { ...prev[industry], loading: false },
       }));
+    } finally {
+      // Remove from loading ref
+      loadingIndustriesRef.current.delete(industry);
     }
   };
 
@@ -543,7 +601,11 @@ export default function ProjectsPage() {
                 ))
               ) : section.projects.length > 0 ? (
                 // Show real projects
-                section.projects.map((project, index) => (
+                section.projects.map((project, index) => {
+                  const isApplied = appliedProjects[project.id];
+                  const applicationStatus = isApplied ? appliedProjects[project.id] : null;
+                  
+                  return (
               <div 
                 key={project.id} 
                                    className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:scale-105 hover:z-20 h-80 flex flex-col"
@@ -556,6 +618,36 @@ export default function ProjectsPage() {
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                   />
                   
+                  {/* Applied Status Badge - top left corner */}
+                  {isApplied && (
+                    <div className={`absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg ${
+                      applicationStatus === 'approved' ? 'bg-green-600 text-white' :
+                      applicationStatus === 'rejected' ? 'bg-red-600 text-white' :
+                      'bg-blue-600 text-white'
+                    }`}>
+                      {applicationStatus === 'approved' && (
+                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                      {applicationStatus === 'rejected' && (
+                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                      {applicationStatus === 'pending' && (
+                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                      <span className="uppercase">
+                        {applicationStatus === 'approved' ? 'Accepted' :
+                         applicationStatus === 'rejected' ? 'Rejected' :
+                         'Applied'}
+                      </span>
+                    </div>
+                  )}
+                  
                   {/* Rating in upper right corner */}
                   <div className="absolute top-3 right-3 flex items-center gap-1 bg-black/70 backdrop-blur-sm text-white px-2 py-1 rounded-full text-sm">
                     <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
@@ -567,24 +659,38 @@ export default function ProjectsPage() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="absolute bottom-3 left-3 right-3 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 opacity-0 group-hover:opacity-100">
                     <div className="flex gap-2">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleApplyNow(project);
-                        }}
-                        className="flex-1 px-4 py-2 bg-white/20 backdrop-blur-sm text-white font-medium rounded-lg hover:bg-white/30 transition-colors"
-                      >
-                        Apply Now
-                      </button>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleLearnMore(project);
-                        }}
-                        className="flex-1 px-4 py-2 bg-white/10 backdrop-blur-sm text-white font-medium rounded-lg hover:bg-white/20 transition-colors border border-white/20"
-                      >
-                        Learn More
-                      </button>
+                      {!isApplied ? (
+                        <>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleApplyNow(project);
+                            }}
+                            className="flex-1 px-4 py-2 bg-white/20 backdrop-blur-sm text-white font-medium rounded-lg hover:bg-white/30 transition-colors"
+                          >
+                            Apply Now
+                          </button>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLearnMore(project);
+                            }}
+                            className="flex-1 px-4 py-2 bg-white/10 backdrop-blur-sm text-white font-medium rounded-lg hover:bg-white/20 transition-colors border border-white/20"
+                          >
+                            Learn More
+                          </button>
+                        </>
+                      ) : (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLearnMore(project);
+                          }}
+                          className="flex-1 px-4 py-2 bg-white/10 backdrop-blur-sm text-white font-medium rounded-lg hover:bg-white/20 transition-colors border border-white/20"
+                        >
+                          View Details
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -597,7 +703,8 @@ export default function ProjectsPage() {
                   </p>
                 </div>
               </div>
-                ))
+                  );
+                })
               ) : (
                 // Show placeholder when no projects and not loading
                 <div className="flex items-center justify-center p-8 text-gray-500 dark:text-gray-400">

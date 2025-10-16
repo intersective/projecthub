@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { sendEmailOtp, verifyEmailOtp } from '@/lib/auth-client';
+import { sendEmailOtp } from '@/lib/auth-client';
 
 type LoginState = {
   email: string;
@@ -84,13 +84,25 @@ export default function LearnerLoginPage() {
     setState(prev => ({ ...prev, status: 'submitting', error: undefined }));
 
     try {
-      const result = await verifyEmailOtp(state.email.toLowerCase().trim(), state.otp);
+      // Call the OTP verification API directly to avoid automatic redirect
+      const response = await fetch('/api/auth/sign-in/email-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          email: state.email.toLowerCase().trim(), 
+          otp: state.otp 
+        }),
+      });
+
+      const result = await response.json();
       
-      if (result?.error) {
+      if (!response.ok || result?.error) {
         setState(prev => ({ 
           ...prev, 
           status: 'error', 
-          error: result.error.message || 'Invalid verification code' 
+          error: result?.error?.message || 'Invalid verification code' 
         }));
       } else {
         // Check if this is a newly registered user and assign learner role
@@ -107,7 +119,11 @@ export default function LearnerLoginPage() {
         }
 
         setState(prev => ({ ...prev, status: 'success' }));
-        // Navigation is handled inside verifyEmailOtp via window.location.replace
+        
+        // Redirect to learner dashboard instead of /projects
+        setTimeout(() => {
+          window.location.replace('/learner/dashboard');
+        }, 50);
         return;
       }
     } catch (error: any) {

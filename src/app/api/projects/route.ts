@@ -34,7 +34,9 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '10');
-    const skip = (page - 1) * limit;
+    // Support both skip parameter (for offset-based pagination) and page parameter (for page-based pagination)
+    const skipParam = url.searchParams.get('skip');
+    const skip = skipParam ? parseInt(skipParam) : (page - 1) * limit;
 
     // Parse filters
     const filters: any = {};

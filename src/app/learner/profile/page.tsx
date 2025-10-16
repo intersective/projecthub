@@ -9,17 +9,10 @@ interface UserProfile {
   email: string;
   name: string;
   role: string;
-  avatar?: string;
+  image?: string; // Maps to user.image in database
   bio?: string;
-  phone?: string;
-  location?: string;
-  skills?: string[];
-  interests?: string[];
-  education?: string;
-  experience?: string;
-  linkedIn?: string;
-  github?: string;
-  portfolio?: string;
+  linkedinUrl?: string; // Maps to profile.linkedinUrl in database
+  website?: string; // Maps to profile.website in database
 }
 
 export default function LearnerProfilePage() {
@@ -190,40 +183,6 @@ export default function LearnerProfilePage() {
                 <p className="text-gray-900 dark:text-white">{profile?.email}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Email cannot be changed</p>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Phone Number
-                </label>
-                {editing ? (
-                  <input
-                    type="tel"
-                    value={editedProfile.phone || ''}
-                    onChange={(e) => setEditedProfile({ ...editedProfile, phone: e.target.value })}
-                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
-                    placeholder="+1 (555) 000-0000"
-                  />
-                ) : (
-                  <p className="text-gray-900 dark:text-white">{profile?.phone || 'Not set'}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Location
-                </label>
-                {editing ? (
-                  <input
-                    type="text"
-                    value={editedProfile.location || ''}
-                    onChange={(e) => setEditedProfile({ ...editedProfile, location: e.target.value })}
-                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
-                    placeholder="City, Country"
-                  />
-                ) : (
-                  <p className="text-gray-900 dark:text-white">{profile?.location || 'Not set'}</p>
-                )}
-              </div>
             </div>
 
             <div className="mt-6">
@@ -244,13 +203,13 @@ export default function LearnerProfilePage() {
             </div>
           </div>
 
-          {/* Social Links */}
+          {/* Professional Links */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
               <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
               </svg>
-              Social Links
+              Professional Links
             </h2>
 
             <div className="space-y-4">
@@ -261,16 +220,16 @@ export default function LearnerProfilePage() {
                 {editing ? (
                   <input
                     type="url"
-                    value={editedProfile.linkedIn || ''}
-                    onChange={(e) => setEditedProfile({ ...editedProfile, linkedIn: e.target.value })}
+                    value={editedProfile.linkedinUrl || ''}
+                    onChange={(e) => setEditedProfile({ ...editedProfile, linkedinUrl: e.target.value })}
                     className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
                     placeholder="https://linkedin.com/in/yourprofile"
                   />
                 ) : (
                   <p className="text-gray-900 dark:text-white">
-                    {profile?.linkedIn ? (
-                      <a href={profile.linkedIn} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                        {profile.linkedIn}
+                    {profile?.linkedinUrl ? (
+                      <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        {profile.linkedinUrl}
                       </a>
                     ) : (
                       'Not set'
@@ -281,46 +240,21 @@ export default function LearnerProfilePage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  GitHub Profile
+                  Website / Portfolio
                 </label>
                 {editing ? (
                   <input
                     type="url"
-                    value={editedProfile.github || ''}
-                    onChange={(e) => setEditedProfile({ ...editedProfile, github: e.target.value })}
+                    value={editedProfile.website || ''}
+                    onChange={(e) => setEditedProfile({ ...editedProfile, website: e.target.value })}
                     className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
-                    placeholder="https://github.com/yourusername"
+                    placeholder="https://yourwebsite.com"
                   />
                 ) : (
                   <p className="text-gray-900 dark:text-white">
-                    {profile?.github ? (
-                      <a href={profile.github} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                        {profile.github}
-                      </a>
-                    ) : (
-                      'Not set'
-                    )}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Portfolio Website
-                </label>
-                {editing ? (
-                  <input
-                    type="url"
-                    value={editedProfile.portfolio || ''}
-                    onChange={(e) => setEditedProfile({ ...editedProfile, portfolio: e.target.value })}
-                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
-                    placeholder="https://yourportfolio.com"
-                  />
-                ) : (
-                  <p className="text-gray-900 dark:text-white">
-                    {profile?.portfolio ? (
-                      <a href={profile.portfolio} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                        {profile.portfolio}
+                    {profile?.website ? (
+                      <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        {profile.website}
                       </a>
                     ) : (
                       'Not set'
