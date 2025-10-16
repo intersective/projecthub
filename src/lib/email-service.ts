@@ -138,7 +138,7 @@ export async function sendOTP(email: string, otp: string, type: 'email-verificat
   try {
     switch (provider) {
       case 'mailtrap':
-        await sendMailtrapEmail(email, otp, type);
+        await sendSMTPEmail(email, otp, type);
         break;
       
       case 'smtp':
