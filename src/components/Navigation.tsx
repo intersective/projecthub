@@ -12,6 +12,7 @@ import {
 } from '@/lib/auth-context';
 import Image from 'next/image';
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import OrganizationSwitcher from './OrganizationSwitcher';
 import { CampaignSwitcher } from './CampaignSwitcher';
 import { CampaignBadge } from './CampaignBadge';
@@ -19,9 +20,14 @@ import { CampaignBadge } from './CampaignBadge';
 export default function Navigation() {
   const { user, currentOrganization, logout, isLoading, viewAsRole, setViewAsRole } = useAuth();
   const isAdmin = useIsAdmin();
+  const pathname = usePathname();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showMyProjects, setShowMyProjects] = useState(false);
+
+  // Determine if we're in learner context
+  const isLearnerRoute = pathname?.startsWith('/learner');
+  const loginUrl = isLearnerRoute ? '/learner/login' : '/login';
 
   if (isLoading) {
     return (
@@ -59,7 +65,7 @@ export default function Navigation() {
                 <a href="/#students" className="nav-item px-4 py-2 text-gray-700 hover:text-purple-600 dark:text-gray-300 dark:hover:text-purple-400 text-sm font-semibold transition-colors rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20">For Students</a>
               </nav>
             </div>
-            <a href="/login" className="inline-flex items-center px-6 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 font-medium text-sm transition-all">
+            <a href={loginUrl} className="inline-flex items-center px-6 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 font-medium text-sm transition-all">
               Sign In
             </a>
           </div>

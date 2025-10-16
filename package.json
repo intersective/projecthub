@@ -12,6 +12,10 @@
     "test": "npm --prefix ./src run test"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.910.0",
     "@vercel/blob": "^1.1.1"
+  },
+  "devDependencies": {
+    "next": "^15.5.4"
   }
 }

@@ -12,10 +12,8 @@ import { ROLES } from "./auth-context";
 // - We enrich the session payload using the customSession plugin so client/server can read RBAC context
 
 export const auth = betterAuth({
-  emailAndPassword: {
-    enabled: true,
-    requireEmailVerification: true,
-  },
+  baseURL: process.env.BETTER_AUTH_URL,
+  trustedOrigins: process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(',') || ["http://localhost:3000"],
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -35,34 +33,53 @@ export const auth = betterAuth({
      user: {
       create: {
         after: async (user) => {
-          // if the user is an admin, add a membership for the user to the default organization
-          // get the domain from the user email
-          const domain = user.email.split("@")[1];
-          // get the organization with the domain
-          const organization = await prisma.organization.findFirst({ where: { domain } });
-          const settings = organization?.settings as { autoRegister?: boolean } | null;
-          if (!settings?.autoRegister && !isAutoRegisterDomain(domain)) {
-            return;
-          }
-          const isAdmin = await isAdminUser(user.email);
-          const role = await prisma.role.findFirst({ where: { displayName: isAdmin ? ROLES.MANAGER : ROLES.GUEST } });
-          if (organization && role) {
-            await prisma.membership.create({
-              data: {
-                memberEntityType: 'user',
-                memberEntityId: user.id,
-                targetEntityType: 'organization',
-                targetEntityId: organization?.id,
-                roleEntityId: role?.id,
-                invitedBy: 'system',
-                invitedAt: new Date(),  
-                approvedBy: 'system',
-                approvedAt: new Date(),
-                status: 'active',
-                isActive: true,
-                joinedAt: new Date(),
-              },
+          try {
+            // Get the domain from the user email
+            const domain = user.email.split("@")[1];
+            
+            // Get the organization with the domain
+            const organization = await prisma.organization.findFirst({ where: { domain } });
+            
+            // Only proceed if organization exists and auto-register is enabled
+            const settings = organization?.settings as { autoRegister?: boolean } | null;
+            const isAdmin = await isAdminUser(user.email);
+            
+            if (!organization) {
+              console.log(`[Auth Hook] No organization found for domain: ${domain}, skipping membership creation`);
+              return;
+            }
+            
+            if (!settings?.autoRegister && !isAutoRegisterDomain(domain) && !isAdmin) {
+              console.log(`[Auth Hook] Auto-registration not enabled for domain: ${domain}`);
+              return;
+            }
+            
+            const role = await prisma.role.findFirst({ 
+              where: { displayName: isAdmin ? ROLES.MANAGER : ROLES.GUEST } 
             });
+            
+            if (organization && role) {
+              await prisma.membership.create({
+                data: {
+                  memberEntityType: 'user',
+                  memberEntityId: user.id,
+                  targetEntityType: 'organization',
+                  targetEntityId: organization?.id,
+                  roleEntityId: role?.id,
+                  invitedBy: 'system',
+                  invitedAt: new Date(),  
+                  approvedBy: 'system',
+                  approvedAt: new Date(),
+                  status: 'active',
+                  isActive: true,
+                  joinedAt: new Date(),
+                },
+              });
+              console.log(`[Auth Hook] Created membership for user ${user.email} in organization ${organization.name}`);
+            }
+          } catch (error) {
+            console.error('[Auth Hook] Error in user.create.after:', error);
+            // Don't throw - allow user creation to succeed even if membership fails
           }
         },
       },

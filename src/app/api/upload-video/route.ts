@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
+import { storageService } from '@/lib/storage-service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,23 +29,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File too large (max 50MB)' }, { status: 400 });
     }
 
-    // Upload to Vercel Blob with organized path
-    const filename = `applications/${session.user.id}/${Date.now()}-${file.name}`;
-    
-    const blob = await put(filename, file, {
-      access: 'public',
-      addRandomSuffix: false,
-    });
+    // Generate storage path
+    const storagePath = `applications/${session.user.id}/${Date.now()}-${file.name}`;
 
-    return NextResponse.json({ 
-      url: blob.url,
-      filename: filename 
-    });
+    // Upload file using storage service
+    const result = await storageService.uploadFile(file, storagePath);
+
+    return NextResponse.json(result);
 
   } catch (error) {
     console.error('Error uploading video:', error);
     return NextResponse.json(
-      { error: 'Failed to upload video' },
+      { error: 'Failed to upload video', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
