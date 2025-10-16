@@ -746,6 +746,7 @@ export default function ProjectsPage() {
         onClose={() => setShowDetailModal(false)}
         showEditButton={false}
         onApplyNow={handleApplyNow}
+        applicationStatus={selectedProject ? appliedProjects[selectedProject.id] || null : null}
       />
 
       {/* Project Application Modal */}
@@ -753,6 +754,7 @@ export default function ProjectsPage() {
         project={selectedProject}
         isOpen={showApplicationModal}
         onClose={() => setShowApplicationModal(false)}
+        onApplicationSubmitted={fetchAppliedProjects}
       />
     </div>
   );
