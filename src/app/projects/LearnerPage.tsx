@@ -138,7 +138,7 @@ export default function ProjectsPage() {
 
   // Lazy loading for industries when they come into view
   useEffect(() => {
-    let scrollTimeout: NodeJS.Timeout;
+    let scrollTimeout: ReturnType<typeof setTimeout> | undefined;
 
     const handleScroll = () => {
       // Debounce scroll events
