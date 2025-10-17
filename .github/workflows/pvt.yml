@@ -46,7 +46,7 @@ jobs:
             ${{ runner.os }}-
       - name: Install dependencies
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
-        run: cd src && npm ci
+        run: cd src && npm install
       - name: Get AWS Organization Number
         id: AWS_ORG
         run: |
@@ -62,10 +62,11 @@ jobs:
         run: |
           cat >> src/.env <<EOF
           OPENAI_API_KEY=$OPENAI_API_KEY
-          EMAIL_USER=rodney@practera.com
+          EMAIL_USER=$EMAIL_USER
           EMAIL_PASS=$EMAIL_PASS
-          EMAIL_HOST=smtp.gmail.com
-          EMAIL_PORT=587
+          EMAIL_HOST=sandbox.smtp.mailtrap.io
+          EMAIL_PORT=2525
+          EMAIL_PROVIDER=mailtrap
 
           GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
           GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
@@ -79,6 +80,7 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
