@@ -178,18 +178,23 @@ export default function LearnerRegisterPage() {
         return;
       }
 
-      console.log('[Learner] Learner role assigned, redirecting to login');
+      console.log('[Learner] Learner role assigned, redirecting to dashboard');
 
+      // After successful OTP sign-in and role assignment, the Better Auth session cookie 
+      // should be set. However, we need to give the cookie time to be properly set
+      // and then redirect to dashboard where the auth middleware will validate the session.
+      
       setState(prev => ({ 
         ...prev, 
         status: 'success',
-        message: 'Account created successfully! Redirecting to login...'
+        message: 'Account created successfully! Redirecting to dashboard...'
       }));
 
-      // Redirect to login page
+      // Wait for cookie to be propagated, then redirect to dashboard
+      // The dashboard will validate the session and redirect back to login if needed
       setTimeout(() => {
-        window.location.href = `/learner/login?registered=true&email=${encodeURIComponent(state.email)}`;
-      }, 1500);
+        window.location.href = '/learner/dashboard';
+      }, 500);
 
     } catch (error: any) {
       console.error('[Learner] Registration error:', error);
