@@ -1,0 +1,144 @@
+<sync_spec>
+
+sync ApplyToProject
+when
+    API.request (method: "POST", path: "/api/project-applications", projectId: projectId, applicantName: applicantName, applicantEmail: applicantEmail, linkedinUrl: linkedinUrl, message: message, applicantImage: applicantImage?, videoUrl: videoUrl?) : (request: request)
+where
+    API._getCurrentUser (request: request) : (userId: userId, userEmail: userEmail)
+    Project._getById (id: projectId) : (project: project)
+    project.status = "active" or project.status = "published"
+    ProjectApplication._checkExistingApplication (projectId: projectId, applicantEmail: userEmail) : (existingApp: existingApp)
+    existingApp = null
+then
+    ProjectApplication.apply (projectId: projectId, applicantName: applicantName, applicantEmail: userEmail, linkedinUrl: linkedinUrl, message: message, applicantImage: applicantImage, videoUrl: videoUrl)
+
+sync ApplyToProjectSuccess
+when
+    API.request (method: "POST", path: "/api/project-applications") : (request: request)
+    ProjectApplication.apply (application: applicationId) : (application: application)
+then
+    API.respond (request: request, status: 201, body: {success: true, application: application})
+
+sync ApplyToProjectDuplicate
+when
+    API.request (method: "POST", path: "/api/project-applications", projectId: projectId) : (request: request)
+where
+    API._getCurrentUser (request: request) : (userId: userId, userEmail: userEmail)
+    ProjectApplication._checkExistingApplication (projectId: projectId, applicantEmail: userEmail) : (existingApp: existingApp)
+    existingApp != null
+then
+    API.respond (request: request, status: 400, body: {error: "You have already applied to this project"})
+
+sync ApproveApplication
+when
+    API.request (method: "POST", path: "/api/applications/:applicationId/approve", status: "approved") : (request: request)
+where
+    API._getCurrentUser (request: request) : (userId: userId, userEmail: userEmail)
+    Session._getCurrentContext (sessionKey: request.sessionId) : (context: context)
+    Membership._getByMemberAndTarget (memberEntity: userId, targetEntity: context) : (membership: membership)
+    Role._getByName (name: membership.roleEntity) : (userRole: userRole)
+    (userRole.name = "expert" or userRole.name = "educator" or userRole.name = "manager" or userRole.name = "platform_admin")
+then
+    ProjectApplication.approve (id: applicationId, reviewedBy: userEmail)
+
+sync RejectApplication
+when
+    API.request (method: "POST", path: "/api/applications/:applicationId/approve", status: "rejected") : (request: request)
+where
+    API._getCurrentUser (request: request) : (userId: userId, userEmail: userEmail)
+    Session._getCurrentContext (sessionKey: request.sessionId) : (context: context)
+    Membership._getByMemberAndTarget (memberEntity: userId, targetEntity: context) : (membership: membership)
+    Role._getByName (name: membership.roleEntity) : (userRole: userRole)
+    (userRole.name = "expert" or userRole.name = "educator" or userRole.name = "manager" or userRole.name = "platform_admin")
+then
+    ProjectApplication.reject (id: applicationId, reviewedBy: userEmail)
+
+sync ApproveApplicationSuccess
+when
+    API.request (method: "POST", path: "/api/applications/:applicationId/approve") : (request: request)
+    ProjectApplication.approve (application: applicationId) : (application: application)
+then
+    API.respond (request: request, status: 200, body: {success: true, application: application})
+
+sync RejectApplicationSuccess
+when
+    API.request (method: "POST", path: "/api/applications/:applicationId/approve") : (request: request)
+    ProjectApplication.reject (application: applicationId) : (application: application)
+then
+    API.respond (request: request, status: 200, body: {success: true, application: application})
+
+sync ApproveApplicationUnauthorized
+when
+    API.request (method: "POST", path: "/api/applications/:applicationId/approve") : (request: request)
+where
+    API._getCurrentUser (request: request) : (userId: userId, userEmail: userEmail)
+    Session._getCurrentContext (sessionKey: request.sessionId) : (context: context)
+    Membership._getByMemberAndTarget (memberEntity: userId, targetEntity: context) : (membership: membership)
+    Role._getByName (name: membership.roleEntity) : (userRole: userRole)
+    (userRole.name != "expert" and userRole.name != "educator" and userRole.name != "manager" and userRole.name != "platform_admin")
+then
+    API.respond (request: request, status: 403, body: {error: "Only experts, educators, managers, or admins can approve applications"})
+
+sync GetAppliedProjects
+when
+    API.request (method: "GET", path: "/api/applications/applied-projects") : (request: request)
+where
+    API._getCurrentUser (request: request) : (userId: userId, userEmail: userEmail)
+    ProjectApplication._getAppliedProjects (applicantEmail: userEmail) : (appliedProjects: appliedProjects)
+then
+    API.respond (request: request, status: 200, body: {success: true, appliedProjects: appliedProjects})
+
+sync GetPendingApplications
+when
+    API.request (method: "GET", path: "/api/applications/pending") : (request: request)
+where
+    API._getCurrentUser (request: request) : (userId: userId)
+    Session._getCurrentContext (sessionKey: request.sessionId) : (context: context)
+    Membership._getByMemberAndTarget (memberEntity: userId, targetEntity: context) : (membership: membership)
+    Role._getByName (name: membership.roleEntity) : (userRole: userRole)
+    (userRole.name = "expert" or userRole.name = "educator" or userRole.name = "manager" or userRole.name = "platform_admin")
+    ProjectApplication._getPendingApplications () : (applications: applications)
+then
+    API.respond (request: request, status: 200, body: {success: true, applications: applications})
+
+sync GetApplicationsByProject
+when
+    API.request (method: "GET", path: "/api/applications/project/:projectId") : (request: request)
+where
+    API._getCurrentUser (request: request) : (userId: userId)
+    Session._getCurrentContext (sessionKey: request.sessionId) : (context: context)
+    Membership._getByMemberAndTarget (memberEntity: userId, targetEntity: context) : (membership: membership)
+    Role._getByName (name: membership.roleEntity) : (userRole: userRole)
+    (userRole.name = "expert" or userRole.name = "educator" or userRole.name = "manager" or userRole.name = "platform_admin")
+    ProjectApplication._getByProject (projectId: projectId) : (applications: applications)
+then
+    API.respond (request: request, status: 200, body: {success: true, applications: applications})
+
+sync WithdrawApplication
+when
+    API.request (method: "DELETE", path: "/api/applications/:applicationId") : (request: request)
+where
+    API._getCurrentUser (request: request) : (userId: userId, userEmail: userEmail)
+    ProjectApplication._getById (id: applicationId) : (application: application)
+    application.applicantEmail = userEmail
+then
+    ProjectApplication.withdraw (id: applicationId, applicantEmail: userEmail)
+
+sync WithdrawApplicationSuccess
+when
+    API.request (method: "DELETE", path: "/api/applications/:applicationId") : (request: request)
+    ProjectApplication.withdraw (application: applicationId) : (success: success)
+then
+    API.respond (request: request, status: 200, body: {success: true})
+
+sync WithdrawApplicationUnauthorized
+when
+    API.request (method: "DELETE", path: "/api/applications/:applicationId") : (request: request)
+where
+    API._getCurrentUser (request: request) : (userId: userId, userEmail: userEmail)
+    ProjectApplication._getById (id: applicationId) : (application: application)
+    application.applicantEmail != userEmail
+then
+    API.respond (request: request, status: 403, body: {error: "You can only withdraw your own applications"})
+
+</sync_spec>

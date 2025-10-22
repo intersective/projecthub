@@ -186,7 +186,7 @@ model Project {
 }
 
 model ProjectApplication {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   projectId      String
   applicantName  String
   applicantEmail String
@@ -194,11 +194,13 @@ model ProjectApplication {
   linkedinUrl    String
   message        String
   videoUrl       String?
-  status         String   @default("pending")
-  appliedAt      DateTime @default(now())
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  status         String    @default("pending")
+  appliedAt      DateTime  @default(now())
+  reviewedAt     DateTime?
+  reviewedBy     String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, applicantEmail])
   @@map("project_application")

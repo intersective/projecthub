@@ -357,7 +357,6 @@ export default function ProjectsPage() {
   };
 
 
-
   // Remove the main loading screen since we show content immediately
   if (loading && showSkeletonSections && industryStats.length === 0) {
     // Only show loading for initial page load if there's really nothing to show
