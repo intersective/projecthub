@@ -105,7 +105,7 @@ export default function LearnerLoginPage() {
           error: result?.error?.message || 'Invalid verification code' 
         }));
       } else {
-        // Check if this is a newly registered user and assign learner role
+                // Check if this is a newly registered user and assign learner role
         try {
           await fetch('/api/auth/learner-signup', {
             method: 'POST',
@@ -120,10 +120,12 @@ export default function LearnerLoginPage() {
 
         setState(prev => ({ ...prev, status: 'success' }));
         
-        // Redirect to learner dashboard instead of /projects
+        // Redirect to learner dashboard
+        // The Better Auth session cookie should be set from the OTP sign-in response.
+        // Wait briefly for cookie propagation, then redirect.
         setTimeout(() => {
           window.location.replace('/learner/dashboard');
-        }, 50);
+        }, 500);
         return;
       }
     } catch (error: any) {

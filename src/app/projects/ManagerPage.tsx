@@ -43,6 +43,20 @@ const getProjectImage = (industry: string, domain: string) => {
   return `https://picsum.photos/seed/${seed}/600/340`;
 };
 
+// Predefined industry options
+const INDUSTRY_OPTIONS = [
+  'Technology',
+  'Healthcare',
+  'Finance',
+  'Education',
+  'Manufacturing',
+  'Retail',
+  'Media',
+  'Energy',
+  'Transportation',
+  'Real Estate',
+];
+
 // Function to get difficulty color
 const getDifficultyColor = (difficulty: string) => {
   switch (difficulty?.toLowerCase()) {
@@ -102,6 +116,7 @@ function ManagerProjectsPage() {
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFileDropZone, setShowFileDropZone] = useState(false);
+  const [showCustomIndustry, setShowCustomIndustry] = useState(false);
   const [formData, setFormData] = useState<ProjectFormData>({
     title: '',
     description: '',
@@ -130,6 +145,13 @@ function ManagerProjectsPage() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, [loading, loadingMore, hasMore, loadMore]);
+
+  // Auto-detect if industry is custom (not in predefined list)
+  useEffect(() => {
+    if (formData.industry && !INDUSTRY_OPTIONS.includes(formData.industry)) {
+      setShowCustomIndustry(true);
+    }
+  }, [formData.industry]);
 
   const handleCreateProject = async () => {
     try {
@@ -239,6 +261,7 @@ function ManagerProjectsPage() {
       scope: '',
       learningObjectives: [],
     });
+    setShowCustomIndustry(false);
   };
 
   const handleFilesSelected = async (files: File[]) => {
@@ -627,14 +650,52 @@ function ManagerProjectsPage() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Industry *
                   </label>
-                  <input
-                    type="text"
-                    value={formData.industry}
-                    onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="e.g., Technology, Healthcare"
-                    required
-                  />
+                  {!showCustomIndustry ? (
+                    <select
+                      value={formData.industry && !INDUSTRY_OPTIONS.includes(formData.industry) ? 'custom' : formData.industry}
+                      onChange={(e) => {
+                        if (e.target.value === 'custom') {
+                          setShowCustomIndustry(true);
+                          setFormData({ ...formData, industry: '' });
+                        } else {
+                          setFormData({ ...formData, industry: e.target.value });
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="">Select an industry</option>
+                      {INDUSTRY_OPTIONS.map((industry) => (
+                        <option key={industry} value={industry}>
+                          {industry}
+                        </option>
+                      ))}
+                      <option value="custom">Other (Custom)</option>
+                    </select>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={formData.industry}
+                        onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Enter custom industry"
+                        required
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowCustomIndustry(false);
+                          setFormData({ ...formData, industry: '' });
+                        }}
+                        className="px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg"
+                        title="Back to dropdown"
+                      >
+                        ↩
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div>

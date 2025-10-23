@@ -357,7 +357,6 @@ export default function ProjectsPage() {
   };
 
 
-
   // Remove the main loading screen since we show content immediately
   if (loading && showSkeletonSections && industryStats.length === 0) {
     // Only show loading for initial page load if there's really nothing to show
@@ -746,6 +745,7 @@ export default function ProjectsPage() {
         onClose={() => setShowDetailModal(false)}
         showEditButton={false}
         onApplyNow={handleApplyNow}
+        applicationStatus={selectedProject ? appliedProjects[selectedProject.id] || null : null}
       />
 
       {/* Project Application Modal */}
@@ -753,6 +753,7 @@ export default function ProjectsPage() {
         project={selectedProject}
         isOpen={showApplicationModal}
         onClose={() => setShowApplicationModal(false)}
+        onApplicationSubmitted={fetchAppliedProjects}
       />
     </div>
   );

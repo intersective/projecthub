@@ -119,10 +119,18 @@ ProjectHub uses PostgreSQL with Prisma ORM. The database is organized around the
 │  │ videoUrl                                                    │             │
 │  │ status            (pending/approved/rejected)               │             │
 │  │ appliedAt                                                   │             │
+│  │ reviewedAt        (timestamp when approved/rejected)        │             │
+│  │ reviewedBy        (email of expert/admin who reviewed)      │             │
 │  │ createdAt                                                   │             │
 │  │ updatedAt                                                   │             │
 │  │                                                             │             │
 │  │ UNIQUE(projectId, applicantEmail)                          │             │
+│  │                                                             │             │
+│  │ Approval Workflow:                                          │             │
+│  │ 1. Learner applies → status: 'pending'                     │             │
+│  │ 2. Expert/Educator/Manager/Admin reviews                   │             │
+│  │ 3. Approved → status: 'approved', reviewedAt, reviewedBy   │             │
+│  │    Rejected → status: 'rejected', reviewedAt, reviewedBy   │             │
 │  └────────────────────────────────────────────────────────────┘             │
 └─────────────────────────────────────────────────────────────────────────────┘
 
@@ -415,6 +423,31 @@ Check role permissions for requested action
 Allow/Deny
 ```
 
+### 4. **Project Application & Approval Workflow**
+```
+Learner browses projects
+    ↓
+Learner clicks "Apply Now"
+    ↓
+Submit application with LinkedIn, message, optional video
+    ↓
+Create ProjectApplication record (status: 'pending')
+    ↓
+Learner sees "APPLIED" badge (pending status)
+    ↓
+Expert/Educator/Manager/Admin reviews application
+    ↓
+Approve/Reject via POST /api/applications/[id]/approve
+    ↓
+Update status to 'approved' or 'rejected'
+    ↓
+Set reviewedAt timestamp and reviewedBy email
+    ↓
+Learner sees "ACCEPTED" or "REJECTED" badge
+    ↓
+(Future) Send notification to learner
+```
+
 ## Schema Evolution Notes
 
 ### Current State
@@ -426,7 +459,7 @@ Allow/Deny
 - ✅ Profile system for experts/partners
 - ✅ Campaign management
 - ✅ Team structure
-- ✅ Project applications
+- ✅ Project applications with approval workflow
 
 ### Pending Implementation
 - ⏳ Assignment tracking

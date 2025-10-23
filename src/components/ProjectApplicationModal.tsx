@@ -24,9 +24,10 @@ interface ProjectApplicationModalProps {
   project: Project | null;
   isOpen: boolean;
   onClose: () => void;
+  onApplicationSubmitted?: () => void; // Callback when application is successfully submitted
 }
 
-export default function ProjectApplicationModal({ project, isOpen, onClose }: ProjectApplicationModalProps) {
+export default function ProjectApplicationModal({ project, isOpen, onClose, onApplicationSubmitted }: ProjectApplicationModalProps) {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     linkedinUrl: '',
@@ -175,6 +176,7 @@ export default function ProjectApplicationModal({ project, isOpen, onClose }: Pr
 
       if (response.ok) {
         alert('Application submitted successfully!');
+        onApplicationSubmitted?.(); // Call the callback to refresh applied projects
         onClose();
       } else {
         throw new Error('Failed to submit application');

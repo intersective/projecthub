@@ -10,6 +10,7 @@ interface ProjectDetailModalProps {
   onUpdated?: (project: Project) => void;
   showEditButton?: boolean;
   onApplyNow?: (project: Project) => void;
+  applicationStatus?: string | null; // 'pending', 'approved', 'rejected', or null if not applied
 }
 
 // Function to get project image based on industry/domain
@@ -28,7 +29,7 @@ const getDifficultyColor = (difficulty: string) => {
   }
 };
 
-export default function ProjectDetailModal({ project, isOpen, onClose, onUpdated, showEditButton = true, onApplyNow }: ProjectDetailModalProps) {
+export default function ProjectDetailModal({ project, isOpen, onClose, onUpdated, showEditButton = true, onApplyNow, applicationStatus }: ProjectDetailModalProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -164,16 +165,47 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onUpdated
                 {/* Action Buttons */}
                 <div className="flex gap-3 ml-6">
                   {!showEditButton && onApplyNow ? (
-                    // Learner mode - show Apply Now button
-                    <button 
-                      onClick={() => onApplyNow(project)}
-                      className="px-8 py-3 bg-white text-black font-semibold rounded-lg hover:bg-gray-200 transition-colors duration-200 flex items-center gap-2"
-                    >
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z"/>
-                      </svg>
-                      Apply Now
-                    </button>
+                    // Learner mode - show Apply Now button or application status
+                    applicationStatus ? (
+                      // User has already applied - show status badge
+                      <div className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold ${
+                        applicationStatus === 'approved' ? 'bg-green-600 text-white' :
+                        applicationStatus === 'rejected' ? 'bg-red-600 text-white' :
+                        'bg-blue-600 text-white'
+                      }`}>
+                        {applicationStatus === 'approved' && (
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                        {applicationStatus === 'rejected' && (
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                        {applicationStatus === 'pending' && (
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                        <span>
+                          {applicationStatus === 'approved' ? 'Application Accepted' :
+                           applicationStatus === 'rejected' ? 'Application Rejected' :
+                           'Application Submitted'}
+                        </span>
+                      </div>
+                    ) : (
+                      // User hasn't applied yet - show Apply Now button
+                      <button 
+                        onClick={() => onApplyNow(project)}
+                        className="px-8 py-3 bg-white text-black font-semibold rounded-lg hover:bg-gray-200 transition-colors duration-200 flex items-center gap-2"
+                      >
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z"/>
+                        </svg>
+                        Apply Now
+                      </button>
+                    )
                   ) : showEditButton ? (
                     // Manager mode - show Start Project and Edit buttons
                     <>
@@ -412,12 +444,43 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onUpdated
                     </button>
                   </>
                 ) : onApplyNow ? (
-                  <button 
-                    onClick={() => onApplyNow(project)} 
-                    className="px-8 py-3 bg-white text-black font-semibold rounded-lg hover:bg-gray-200 transition-colors duration-200"
-                  >
-                    Apply Now
-                  </button>
+                  applicationStatus ? (
+                    // User has already applied - show status
+                    <div className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold ${
+                      applicationStatus === 'approved' ? 'bg-green-600 text-white' :
+                      applicationStatus === 'rejected' ? 'bg-red-600 text-white' :
+                      'bg-blue-600 text-white'
+                    }`}>
+                      {applicationStatus === 'approved' && (
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                      {applicationStatus === 'rejected' && (
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                      {applicationStatus === 'pending' && (
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                      <span>
+                        {applicationStatus === 'approved' ? 'Application Accepted' :
+                         applicationStatus === 'rejected' ? 'Application Rejected' :
+                         'Application Submitted'}
+                      </span>
+                    </div>
+                  ) : (
+                    // User hasn't applied yet - show Apply Now button
+                    <button 
+                      onClick={() => onApplyNow(project)} 
+                      className="px-8 py-3 bg-white text-black font-semibold rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                    >
+                      Apply Now
+                    </button>
+                  )
                 ) : null}
               </div>
             </div>

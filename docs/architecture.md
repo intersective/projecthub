@@ -30,6 +30,7 @@ The application is built using **Concept Design** - a modular approach where fun
 - **Organization**: Hierarchical organization structure with managing relationships
 - **Campaign**: Project sourcing campaigns with constraints and landing pages
 - **Project**: Industry projects with AI generation and customization capabilities
+- **ProjectApplication**: Learner applications to projects with approval workflow
 - **Team**: Student collaboration with optional expert and industry partner involvement
 - **Assignment**: Project assignments and application tracking
 - **Expert**: Domain expertise management and project feedback

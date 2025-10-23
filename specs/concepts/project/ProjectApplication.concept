@@ -1,0 +1,84 @@
+<concept_spec>
+
+concept ProjectApplication
+
+purpose
+  manage learner applications to projects with approval workflow
+
+state
+  a set of ProjectApplications with
+    a projectId String
+    an applicantName String
+    an applicantEmail String
+    an optional applicantImage String
+    a linkedinUrl String
+    a message String
+    an optional videoUrl String
+    a status String
+    an appliedAt Date
+    an optional reviewedAt Date
+    an optional reviewedBy String
+    a createdAt Date
+    an updatedAt Date
+
+actions
+  apply(projectId: String, applicantName: String, applicantEmail: String, linkedinUrl: String, message: String, applicantImage: String?, videoUrl: String?) -> ProjectApplication | {error}
+    - create new project application
+    - validate required fields
+    - check if project exists
+    - check if user has already applied (one application per user per project)
+    - set status to "pending"
+    - return application with generated id and timestamps
+
+  approve(id: String, reviewedBy: String) -> ProjectApplication | {error}
+    - approve pending application
+    - requires expert, educator, manager, or platform_admin role
+    - set status to "approved"
+    - set reviewedAt to current timestamp
+    - set reviewedBy to reviewer email
+    - return updated application
+
+  reject(id: String, reviewedBy: String) -> ProjectApplication | {error}
+    - reject pending application
+    - requires expert, educator, manager, or platform_admin role
+    - set status to "rejected"
+    - set reviewedAt to current timestamp
+    - set reviewedBy to reviewer email
+    - return updated application
+
+  withdraw(id: String, applicantEmail: String) -> ProjectApplication | {error}
+    - withdraw own application
+    - only applicant can withdraw
+    - delete application record
+    - return success status
+
+queries
+  _getById(id: String) -> [ProjectApplication]
+    - return application by identifier
+
+  _getByProject(projectId: String) -> [ProjectApplication]
+    - return all applications for a project
+
+  _getByApplicant(applicantEmail: String) -> [ProjectApplication]
+    - return all applications from a specific applicant
+
+  _getByStatus(status: String) -> [ProjectApplication]
+    - return applications with specified status (pending/approved/rejected)
+
+  _getPendingApplications() -> [ProjectApplication]
+    - return all pending applications requiring review
+
+  _getApprovedApplications() -> [ProjectApplication]
+    - return all approved applications
+
+  _getAppliedProjects(applicantEmail: String) -> [{projectId: String, status: String}]
+    - return map of projectId to application status for a learner
+    - used to display applied/approved/rejected badges in UI
+
+  _checkExistingApplication(projectId: String, applicantEmail: String) -> [ProjectApplication]
+    - check if user has already applied to a project
+
+operational principle
+  Learners apply to projects and applications must be approved by experts, educators, managers, or admins. After apply(project: "p1", email: "user@example.com", ...), the status is "pending". After approve(application: "a1", reviewer: "expert@example.com"), then _getAppliedProjects(email: "user@example.com") shows "p1" with status "approved". Applications enforce unique constraint (projectId, applicantEmail).
+
+</concept_spec>
