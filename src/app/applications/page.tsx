@@ -30,14 +30,14 @@ export default function ApplicationsPage() {
     return null; // Will redirect to login
   }
 
-  // Platform/Org admins and educators see manager view
+  // Platform/Org admins, educators, and experts see manager view (can approve applications)
   const isManager = hasRole(ROLES.PLATFORM_ADMIN) || 
                    hasRole(ROLES.MANAGER) || 
-                   hasRole(ROLES.EDUCATOR);
+                   hasRole(ROLES.EDUCATOR) ||
+                   hasRole(ROLES.EXPERT);
 
-  // Industry partners and experts see provider view  
-  const isProvider = hasRole(ROLES.PROVIDER) || 
-                    hasRole(ROLES.EXPERT);
+  // Industry partners see provider view  
+  const isProvider = hasRole(ROLES.PROVIDER);
 
   if (isManager) {
     return <ManagerPage />;

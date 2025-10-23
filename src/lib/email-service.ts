@@ -97,3 +97,70 @@ export async function sendOTP(email: string, otp: string, type: 'email-verificat
     }
   }
 }
+
+/**
+ * Send a generic email notification
+ * @param to - Recipient email address
+ * @param subject - Email subject
+ * @param html - HTML content
+ * @param text - Plain text fallback
+ */
+export async function sendEmail({
+  to,
+  subject,
+  html,
+  text,
+}: {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+}) {
+  // Only run on server side
+  if (typeof window !== 'undefined') {
+    throw new Error('Email service can only be used on server side');
+  }
+
+  const provider = process.env.EMAIL_PROVIDER || 'console';
+
+  try {
+    switch (provider) {
+      case 'smtp':
+        const transporter = nodemailer.createTransport({
+          host: process.env.EMAIL_HOST || "smtp.gmail.com",
+          port: parseInt(process.env.EMAIL_PORT || "587"),
+          secure: process.env.EMAIL_SECURE === 'true',
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
+          },
+        });
+
+        await transporter.sendMail({
+          from: `"ProjectHub" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+          to,
+          subject,
+          html,
+          text: text || html.replace(/<[^>]*>/g, ''), // Strip HTML tags as fallback
+        });
+
+        console.log(`📧 Email sent via SMTP to ${to}: ${subject}`);
+        break;
+      
+      case 'console':
+      default:
+        console.log(`📧 Email sent to ${to}`);
+        console.log(`   Subject: ${subject}`);
+        console.log(`   Content: ${text || html.replace(/<[^>]*>/g, '')}`);
+        break;
+    }
+  } catch (error) {
+    console.error('Email sending failed:', error);
+    // Fallback to console in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`📧 [FALLBACK] Email to ${to}: ${subject}`);
+    } else {
+      throw error;
+    }
+  }
+}

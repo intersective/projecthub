@@ -99,6 +99,16 @@ export default function Navigation() {
       items.push({ href: '/projects', label: 'Projects', show: true });
     }
 
+    // Applications for managers, educators, experts, admins
+    const canReviewApplications = useHasRole(ROLES.PLATFORM_ADMIN) ||
+                                  useHasRole(ROLES.MANAGER) ||
+                                  useHasRole(ROLES.EDUCATOR) ||
+                                  useHasRole(ROLES.EXPERT);
+    
+    if (canReviewApplications || useHasRole(ROLES.LEARNER)) {
+      items.push({ href: '/applications', label: 'Applications', show: true });
+    }
+
     if (canReadTeams) {
       items.push({ href: '/teams', label: 'Teams', show: true });
     }
