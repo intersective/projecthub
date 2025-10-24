@@ -157,9 +157,15 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="mt-2">
-            <span className="text-red-600 dark:text-red-400 text-sm">
+            <a 
+              href="/applications?filter=pending" 
+              className="text-red-600 dark:text-red-400 text-sm flex items-center gap-1 hover:gap-2 transition-all group"
+            >
               Require review
-            </span>
+              <svg className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </a>
           </div>
         </div>
       </div>
@@ -198,6 +204,9 @@ export default function DashboardPage() {
         <div className="card">
           <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Quick Actions</h3>
           <div className="grid grid-cols-2 gap-3">
+            <a href="/applications" className="btn btn-primary text-center">
+              Review Applications
+            </a>
             <a href="/campaigns/new" className="btn btn-primary text-center">
               Create Campaign
             </a>

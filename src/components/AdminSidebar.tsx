@@ -1,15 +1,37 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useIsAdmin } from '@/lib/auth-context';
 
 export default function AdminSidebar() {
   const isAdmin = useIsAdmin();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [pendingApplications, setPendingApplications] = useState(0);
   
   // Only show sidebar for manager and admin routes
   const shouldShowSidebar = isAdmin;
+  
+  useEffect(() => {
+    if (shouldShowSidebar) {
+      fetchPendingApplications();
+    }
+  }, [shouldShowSidebar]);
+
+  const fetchPendingApplications = async () => {
+    try {
+      const response = await fetch('/api/dashboard/stats');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setPendingApplications(data.pendingApplications || 0);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch pending applications:', error);
+    }
+  };
+  
   if (!shouldShowSidebar) return null;
 
   const sidebarItems = [
@@ -89,7 +111,8 @@ export default function AdminSidebar() {
       items: [
         { 
           href: '/applications', 
-          label: 'Applications', 
+          label: 'Applications',
+          badge: pendingApplications > 0 ? pendingApplications : undefined,
           icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -149,12 +172,17 @@ export default function AdminSidebar() {
                       {item.icon}
                     </div>
                     <span 
-                      className={`ml-3 text-sm font-medium transition-all duration-300 ${
+                      className={`ml-3 text-sm font-medium transition-all duration-300 flex-1 ${
                         isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'
                       }`}
                     >
                       {item.label}
                     </span>
+                    {item.badge && isExpanded && (
+                      <span className="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-orange-500 rounded-full">
+                        {item.badge}
+                      </span>
+                    )}
                   </a>
                 ))}
               </nav>

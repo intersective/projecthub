@@ -37,13 +37,29 @@ interface CategoryForModal {
 }
 
 export default function HomePage() {
-  const { user, hasRole } = useAuth();
+  const { user, hasRole, isLoading } = useAuth();
   const router = useRouter();
   const [heroProject, setHeroProject] = useState(demoProjects[0]);
   const [selectedProject, setSelectedProject] = useState<ProjectForModal | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<CategoryForModal | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+
+  // Redirect managers to dashboard
+  useEffect(() => {
+    if (!isLoading && user) {
+      const isManager = hasRole(ROLES.PLATFORM_ADMIN) || 
+                       hasRole(ROLES.MANAGER) ||
+                       hasRole(ROLES.EDUCATOR) ||
+                       hasRole(ROLES.EXPERT) ||
+                       hasRole(ROLES.PROVIDER);
+      
+      if (isManager) {
+        router.push('/dashboard');
+        return;
+      }
+    }
+  }, [user, isLoading, hasRole, router]);
 
   useEffect(() => {
     // Rotate hero project every 10 seconds
@@ -125,6 +141,18 @@ export default function HomePage() {
     const seed = categoryName.toLowerCase().replace(/\s+/g, '-');
     return `https://picsum.photos/seed/${seed}/400/300`;
   };
+
+  // Show loading while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-purple-600">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-4 border-white mx-auto mb-4"></div>
+          <p className="text-white text-xl font-semibold">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Hero Section
   const HeroSection = () => (
