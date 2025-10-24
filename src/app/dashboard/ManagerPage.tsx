@@ -36,23 +36,35 @@ export default function DashboardPage() {
 
   const fetchStats = async () => {
     try {
-      // Simulate API calls for now
-      // In a real implementation, these would be actual API calls
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setStats({
-        totalCampaigns: 12,
-        activeCampaigns: 5,
-        totalTeams: 24,
-        activeTeams: 18,
-        totalProjects: 45,
-        totalPartners: 67,
-        totalExperts: 23,
-        totalAssignments: 89,
-        pendingApplications: 15
+      const response = await fetch('/api/dashboard/stats', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch dashboard stats');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setStats({
+          totalCampaigns: data.totalCampaigns,
+          activeCampaigns: data.activeCampaigns,
+          totalTeams: data.totalTeams,
+          activeTeams: data.activeTeams,
+          totalProjects: data.totalProjects,
+          totalPartners: data.totalPartners,
+          totalExperts: data.totalExperts,
+          totalAssignments: data.totalAssignments,
+          pendingApplications: data.pendingApplications,
+        });
+      }
     } catch (error) {
       console.error('Failed to fetch stats:', error);
+      // Keep default values on error
     } finally {
       setLoading(false);
     }
