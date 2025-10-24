@@ -231,8 +231,31 @@ function OrganizationMembers({ organizationId }: { organizationId: string }) {
       {!loading && !error && (
         <ul className="space-y-2">
           {members && members.length > 0 && members.map((m, idx) => (
-            <li key={m.id ?? idx} className="text-sm flex items-center justify-between">
-              <span>{m.memberEntity} — {m.roleEntity} — {m.status}</span>
+            <li key={m.id ?? idx} className="text-sm flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+              <div className="flex-1">
+                {m.memberInfo ? (
+                  <div>
+                    <div className="font-medium">{m.memberInfo.name || 'Unnamed User'}</div>
+                    <div className="text-xs text-gray-500">{m.memberInfo.email}</div>
+                  </div>
+                ) : (
+                  <div className="text-gray-500">
+                    {m.memberEntityType}: {m.memberEntityId.substring(0, 12)}...
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-600">
+                  {m.roleInfo?.displayName || m.roleEntityId}
+                </span>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                  m.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                  m.status === 'invited' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                  'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
+                }`}>
+                  {m.status}
+                </span>
+              </div>
             </li>
           ))}
           {members.length === 0 && (
