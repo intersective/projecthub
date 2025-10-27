@@ -115,5 +115,8 @@ resource "aws_instance" "bastion" {
               
               psql --version
 
+              mkdir -p /home/ubuntu/work
+              git clone https://github.com/intersective/projecthub.git /home/ubuntu/work/projecthub
+              
               EOF
 }
