@@ -82,7 +82,7 @@ jobs:
       - name: .pgpass create
         run: |
           USERNAME=$(aws secretsmanager get-secret-value --secret-id $STACK_NAME-CoreDBSecret-$ENV| jq --raw-output '.SecretString' | tr -d '\n' | jq -r '.username')
-          USERNAME=$(aws secretsmanager get-secret-value --secret-id $STACK_NAME-CoreDBSecret-$ENV| jq --raw-output '.SecretString' | tr -d '\n' | jq -r '.password')
+          PASSWORD=$(aws secretsmanager get-secret-value --secret-id $STACK_NAME-CoreDBSecret-$ENV| jq --raw-output '.SecretString' | tr -d '\n' | jq -r '.password')
           HOST=$DB_HOST
           POST=5432
 
