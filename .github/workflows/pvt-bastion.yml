@@ -54,7 +54,6 @@ jobs:
         run: |
           terraform init
       - name: .env create
-        if: ${{ github.event.inputs.action == 'deploy' }}
         run: |
           cat >> .env <<EOF
           OPENAI_API_KEY=$OPENAI_API_KEY
@@ -81,7 +80,6 @@ jobs:
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - name: .pgpass create
-        if: ${{ github.event.inputs.action == 'deploy' }}
         run: |
           USERNAME=$(aws secretsmanager get-secret-value --secret-id $STACK_NAME-CoreDBSecret-$ENV| jq --raw-output '.SecretString' | tr -d '\n' | jq -r '.username')
           USERNAME=$(aws secretsmanager get-secret-value --secret-id $STACK_NAME-CoreDBSecret-$ENV| jq --raw-output '.SecretString' | tr -d '\n' | jq -r '.password')
