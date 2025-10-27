@@ -7,9 +7,10 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth.api.getSession({
       headers: await headers()
     });
@@ -22,7 +23,7 @@ export async function GET(
     const memberships = await prisma.membership.findMany({
       where: {
         targetEntityType: 'organization',
-        targetEntityId: params.id
+        targetEntityId: id
       }
     });
 
@@ -65,9 +66,10 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth.api.getSession({
       headers: await headers()
     });
@@ -99,7 +101,7 @@ export async function POST(
       memberEntityId: body.memberEntity,
       roleEntityId: body.roleEntity || 'org_member',
       targetEntityType: 'organization',
-      targetEntityId: params.id,
+      targetEntityId: id,
       invitedBy: session.user.id
     });
 

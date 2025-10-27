@@ -11,9 +11,10 @@ import { sendEmail } from '@/lib/email-service';
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -51,12 +52,12 @@ export async function POST(
           "reviewedAt" = NOW(),
           "reviewedBy" = ${session.user.email},
           "updatedAt" = NOW()
-      WHERE id = ${params.id}
+      WHERE id = ${id}
     `;
 
     // Fetch the updated application
     const application = await prisma.projectApplication.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         project: {
           select: {
@@ -101,7 +102,7 @@ export async function POST(
             }
 
             <div style="margin: 30px 0;">
-              <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/projects/${application.projectId}" 
+              <a href="${process.env.NEXT_PUBLIC_AUTH_URL || 'http://localhost:3000'}/projects/${application.projectId}" 
                  style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
                 View Project
               </a>
@@ -125,7 +126,7 @@ ${isApproved
   : 'Unfortunately, your application was not approved at this time. Please feel free to apply to other projects that match your interests and skills.'
 }
 
-View Project: ${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/projects/${application.projectId}
+View Project: ${process.env.NEXT_PUBLIC_AUTH_URL || 'http://localhost:3000'}/projects/${application.projectId}
 
 Reviewed by: ${session.user.email}
 Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
