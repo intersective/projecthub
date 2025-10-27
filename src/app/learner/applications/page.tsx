@@ -19,22 +19,6 @@ interface Application {
   estimatedHours?: number;
 }
 
-interface Project {
-  id: string;
-  title: string;
-  image: string;
-  description: string;
-  industry: string;
-  domain: string;
-  difficulty: string;
-  estimatedHours: number;
-  deliverables: string[];
-  status: string;
-  createdAt: string;
-  scope?: string;
-  learningObjectives?: string[];
-}
-
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'accepted': return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
@@ -91,8 +75,6 @@ export default function LearnerApplicationsPage() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [showProjectModal, setShowProjectModal] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   useEffect(() => {
     fetchApplications();
@@ -135,17 +117,9 @@ export default function LearnerApplicationsPage() {
     }
   };
 
-  const handleViewProject = async (projectId: string) => {
-    try {
-      const response = await fetch(`/api/projects/${projectId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setSelectedProject(data.project);
-        setShowProjectModal(true);
-      }
-    } catch (error) {
-      console.error('Failed to fetch project:', error);
-    }
+  const handleViewProject = (projectId: string) => {
+    // Navigate to the dedicated project detail page
+    router.push(`/projects/${projectId}`);
   };
 
   const filteredApplications = filterStatus === 'all' 
@@ -329,6 +303,17 @@ export default function LearnerApplicationsPage() {
                     >
                       View Project
                     </button>
+                    {application.status === 'accepted' && (
+                      <button
+                        onClick={() => router.push(`/learner/projects/${application.projectId}/workspace`)}
+                        className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                        Go to Workspace
+                      </button>
+                    )}
                     {(application.status === 'pending' || application.status === 'under_review') && (
                       <button
                         onClick={() => handleWithdraw(application.id)}
@@ -380,70 +365,6 @@ export default function LearnerApplicationsPage() {
           </div>
         )}
       </div>
-
-      {/* Simple Project Modal */}
-      {showProjectModal && selectedProject && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowProjectModal(false)}>
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <h2 className="text-2xl font-bold">{selectedProject.title}</h2>
-                <button
-                  onClick={() => setShowProjectModal(false)}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              
-              <img 
-                src={selectedProject.image || '/images/placeholder-project.jpg'} 
-                alt={selectedProject.title}
-                className="w-full h-64 object-cover rounded-lg mb-4"
-              />
-              
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-semibold mb-2">Description</h3>
-                  <p className="text-gray-600 dark:text-gray-400">{selectedProject.description}</p>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="font-semibold mb-2">Industry</h3>
-                    <p className="text-gray-600 dark:text-gray-400">{selectedProject.industry}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-2">Domain</h3>
-                    <p className="text-gray-600 dark:text-gray-400">{selectedProject.domain}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-2">Difficulty</h3>
-                    <p className="text-gray-600 dark:text-gray-400">{selectedProject.difficulty}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-2">Estimated Hours</h3>
-                    <p className="text-gray-600 dark:text-gray-400">{selectedProject.estimatedHours}</p>
-                  </div>
-                </div>
-
-                {selectedProject.deliverables && selectedProject.deliverables.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold mb-2">Deliverables</h3>
-                    <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-1">
-                      {selectedProject.deliverables.map((item, idx) => (
-                        <li key={idx}>{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
