@@ -118,9 +118,9 @@ resource "aws_instance" "bastion" {
               mkdir -p /home/ubuntu/work
               git clone https://github.com/intersective/projecthub.git /home/ubuntu/work/projecthub
 
-              cat > /home/ubuntu/.env << 'ENVFILE'
+              cat > /home/ubuntu/work/projecthub/src/.env << 'ENVFILE'
               ${file("${path.module}/.env")}
               ENVFILE
-              
+
               EOF
 }
