@@ -1,0 +1,55 @@
+---
+name: Deploy to p2-sandbox
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Select action to perform'
+        type: choice
+        required: true
+        options:
+          - 'deploy'
+          - 'destroy'
+        default: 'deploy'
+
+jobs:
+  deploy:
+    permissions: write-all
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform/bastion/dev
+    env:
+      REGION: ap-southeast-2
+      ENV: dev
+      STACK_NAME: p2-sandbox
+      ROOTSTACK: projecthub
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      ENDPOINT: projecthub.p2-sandbox.practera.com
+      ACM_NAME: cdn.p2-sandbox.practera.com
+      CI: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.13.4'
+      - name: Get AWS Organization Number
+        id: AWS_ORG
+        run: |
+          P2SANDBOX=$(echo $AWS_ACCOUNT_ID | jq -r .P2SANDBOX)
+          echo "::add-mask::$P2SANDBOX"
+          echo "P2SANDBOX=$P2SANDBOX" >> $GITHUB_OUTPUT
+      - name: Configure AWS Credentials from P2SANDBOX Account
+        uses: ./.github/actions/aws-oidc
+        with:
+          role-to-assume: arn:aws:iam::${{ steps.AWS_ORG.outputs.P2SANDBOX }}:role/github-restricted-role-to-assume
+          region: ${{ env.REGION }}
+      - name: terraform init
+        run: |
+          terraform init
+
