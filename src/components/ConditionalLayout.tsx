@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useIsAdmin } from '@/lib/auth-context';
+import { useIsAdmin, useAuth, ROLES } from '@/lib/auth-context';
 
 interface ConditionalLayoutProps {
   children: React.ReactNode;
@@ -10,17 +10,37 @@ interface ConditionalLayoutProps {
 export default function ConditionalLayout({ children }: ConditionalLayoutProps) {
   const pathname = usePathname();
   const isAdmin = useIsAdmin();
+  const { hasRole } = useAuth();
   
-  // Check if we should show sidebar (manager/admin routes)
-  const shouldShowSidebar = isAdmin;
+  // Check if we should show admin sidebar
+  const shouldShowAdminSidebar = isAdmin;
   
-  // Check if this is a learner route that should have no padding
+  // Check if we should show learner sidebar
+  const isLearner = hasRole(ROLES.LEARNER);
+  const learnerRoutes = ['/learner', '/projects', '/providers', '/applications', '/profile'];
+  const isLearnerAccessibleRoute = learnerRoutes.some(route => 
+    pathname === route || pathname?.startsWith(route + '/')
+  );
+  const shouldShowLearnerSidebar = isLearner && isLearnerAccessibleRoute && !shouldShowAdminSidebar;
+  
+  // Check if this is a route that should have no padding
   const isHomeRoute = pathname === '/';
-  const isLoginRoute = pathname === '/login';
+  const isLoginRoute = pathname === '/login' || pathname === '/learner/login' || pathname === '/learner/register';
   const padding = isHomeRoute || isLoginRoute ? '' : 'p-6';
   
-  if (shouldShowSidebar) {
-    // Manager/admin routes: with sidebar
+  if (shouldShowAdminSidebar) {
+    // Manager/admin routes: with admin sidebar
+    return (
+      <main className="lg:pl-16 min-h-screen transition-all duration-300">
+        <div className={padding}>
+          {children}
+        </div>
+      </main>
+    );
+  }
+  
+  if (shouldShowLearnerSidebar) {
+    // Learner routes: with learner sidebar
     return (
       <main className="lg:pl-16 min-h-screen transition-all duration-300">
         <div className={padding}>

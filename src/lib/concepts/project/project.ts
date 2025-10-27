@@ -427,6 +427,8 @@ export class ProjectConcept {
       domain?: string;
       status?: string;
       difficulty?: string;
+      estimatedHoursMin?: number;
+      estimatedHoursMax?: number;
     };
   }): Promise<{ projects: Project[]; total: number; hasMore: boolean }> {
     try {
@@ -464,6 +466,15 @@ export class ProjectConcept {
         if (input.filters.difficulty) {
           where.difficulty = input.filters.difficulty;
         }
+        if (input.filters.estimatedHoursMin !== undefined || input.filters.estimatedHoursMax !== undefined) {
+          where.estimatedHours = {};
+          if (input.filters.estimatedHoursMin !== undefined) {
+            where.estimatedHours.gte = input.filters.estimatedHoursMin;
+          }
+          if (input.filters.estimatedHoursMax !== undefined) {
+            where.estimatedHours.lte = input.filters.estimatedHoursMax;
+          }
+        }
       }
 
       // Get total count
@@ -485,7 +496,17 @@ export class ProjectConcept {
     }
   }
 
-  async _getIndustryCountByOrganization(input: { organizationId: string }): Promise<{ industry: string, count: number }[]> {
+  async _getIndustryCountByOrganization(input: { 
+    organizationId: string;
+    filters?: {
+      industry?: string;
+      domain?: string;
+      status?: string;
+      difficulty?: string;
+      estimatedHoursMin?: number;
+      estimatedHoursMax?: number;
+    };
+  }): Promise<{ industry: string, count: number }[]> {
     try {
       // Get project IDs that belong to the organization via memberships
       const memberships = await prisma.membership.findMany({
@@ -503,9 +524,36 @@ export class ProjectConcept {
         return [];
       }
       
+      // Build where clause with filters
+      const where: any = { id: { in: projectIds } };
+      
+      if (input.filters) {
+        if (input.filters.industry) {
+          where.industry = input.filters.industry;
+        }
+        if (input.filters.domain) {
+          where.domain = { contains: input.filters.domain, mode: 'insensitive' };
+        }
+        if (input.filters.status) {
+          where.status = input.filters.status;
+        }
+        if (input.filters.difficulty) {
+          where.difficulty = input.filters.difficulty;
+        }
+        if (input.filters.estimatedHoursMin !== undefined || input.filters.estimatedHoursMax !== undefined) {
+          where.estimatedHours = {};
+          if (input.filters.estimatedHoursMin !== undefined) {
+            where.estimatedHours.gte = input.filters.estimatedHoursMin;
+          }
+          if (input.filters.estimatedHoursMax !== undefined) {
+            where.estimatedHours.lte = input.filters.estimatedHoursMax;
+          }
+        }
+      }
+      
       const projects = await prisma.project.groupBy({
         by: ['industry'],
-        where: { id: { in: projectIds } },
+        where,
         _count: {
           id: true,
         },

@@ -44,11 +44,23 @@ export async function GET(request: NextRequest) {
     const domain = url.searchParams.get('domain');
     const status = url.searchParams.get('status');
     const difficulty = url.searchParams.get('difficulty');
+    const duration = url.searchParams.get('duration');
 
     if (industry) filters.industry = industry;
     if (domain) filters.domain = domain;
     if (status) filters.status = status;
     if (difficulty) filters.difficulty = difficulty;
+    
+    // Parse duration filter (e.g., "0-10", "10-20", "20-40", "40+")
+    if (duration) {
+        if (duration === '40+') {
+            filters.estimatedHoursMin = 40;
+        } else {
+            const [min, max] = duration.split('-').map(Number);
+            if (!isNaN(min)) filters.estimatedHoursMin = min;
+            if (!isNaN(max)) filters.estimatedHoursMax = max;
+        }
+    }
 
     try {
         // Get paginated projects

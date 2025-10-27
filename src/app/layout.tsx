@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { AuthBridge } from '@/lib/auth-bridge'
 import Navigation from '@/components/Navigation'
 import AdminSidebar from '@/components/AdminSidebar'
+import LearnerSidebar from '@/components/LearnerSidebar'
 import ConditionalLayout from '@/components/ConditionalLayout'
 
 export const metadata: Metadata = {
@@ -28,6 +29,7 @@ export default async function RootLayout({
         <AuthProvider initialUser={initialUser as any}>
           <Navigation />
           <AdminSidebar />
+          <LearnerSidebar />
           <ConditionalLayout>
             {children}
           </ConditionalLayout>
