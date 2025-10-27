@@ -126,5 +126,8 @@ resource "aws_instance" "bastion" {
               ${file("${path.module}/.pgpass")}
               PGPASSFILE
 
+              chmod 600 /home/ubuntu/.pgpass
+              chown ubuntu:ubuntu /home/ubuntu/.pgpass
+              
               EOF
 }
