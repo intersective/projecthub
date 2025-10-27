@@ -52,4 +52,12 @@ jobs:
       - name: terraform init
         run: |
           terraform init
+      - name: terraform apply
+        if: ${{ github.event.inputs.action == 'deploy' }}
+        run: |
+          terraform apply -var-file=default.tfvars -auto-approve
+      - name: terraform destroy
+        if: ${{ github.event.inputs.action == 'destroy' }}
+        run: |
+          terraform destroy -var-file=default.tfvars -auto-approve
 
