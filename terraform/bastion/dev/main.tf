@@ -122,5 +122,9 @@ resource "aws_instance" "bastion" {
               ${file("${path.module}/.env")}
               ENVFILE
 
+              cat > /home/ubuntu/.pgpass << 'PGPASSFILE'
+              ${file("${path.module}/.pgpass")}
+              PGPASSFILE
+
               EOF
 }

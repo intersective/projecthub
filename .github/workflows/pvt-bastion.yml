@@ -5,13 +5,13 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: 'Select action to perform'
+        description: "Select action to perform"
         type: choice
         required: true
         options:
-          - 'deploy'
-          - 'destroy'
-        default: 'deploy'
+          - "deploy"
+          - "destroy"
+        default: "deploy"
 
 jobs:
   deploy:
@@ -29,6 +29,7 @@ jobs:
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
       ENDPOINT: projecthub.p2-sandbox.practera.com
       ACM_NAME: cdn.p2-sandbox.practera.com
+      DB_HOST: db.internal.p2-sandbox.practera.com
       CI: true
     steps:
       - uses: actions/checkout@v4
@@ -37,7 +38,7 @@ jobs:
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: '1.13.4'
+          terraform_version: "1.13.4"
       - name: Get AWS Organization Number
         id: AWS_ORG
         run: |
@@ -79,6 +80,18 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - name: .pgpass create
+        if: ${{ github.event.inputs.action == 'deploy' }}
+        run: |
+          USERNAME=$(aws secretsmanager get-secret-value --secret-id $STACK_NAME-CoreDBSecret-$ENV| jq --raw-output '.SecretString' | tr -d '\n' | jq -r '.username')
+          USERNAME=$(aws secretsmanager get-secret-value --secret-id $STACK_NAME-CoreDBSecret-$ENV| jq --raw-output '.SecretString' | tr -d '\n' | jq -r '.password')
+          HOST=$DB_HOST
+          POST=5432
+
+          cat >> .pgpass <<EOF
+          $HOST:$POST:*:$USERNAME:$PASSWORD
+          EOF
+
       - name: terraform apply
         if: ${{ github.event.inputs.action == 'deploy' }}
         run: |
@@ -87,4 +100,3 @@ jobs:
         if: ${{ github.event.inputs.action == 'destroy' }}
         run: |
           terraform destroy -var-file=default.tfvars -auto-approve
-
