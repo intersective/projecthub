@@ -90,8 +90,10 @@ export default function ProjectsPage() {
   const [filters, setFilters] = useState({
     difficulty: '',
     industry: '',
-    domain: ''
+    duration: '',
+    acceptingApplications: ''
   });
+  const [showFilters, setShowFilters] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -131,10 +133,12 @@ export default function ProjectsPage() {
     fetchAppliedProjects();
   }, []);
 
-  // Refetch when filters change (for now we'll disable filtering in the new approach)
-  // useEffect(() => {
-  //   fetchIndustryStats();
-  // }, [filters]);
+  // Refetch when filters change
+  useEffect(() => {
+    if (initializedRef.current) {
+      fetchIndustryStats();
+    }
+  }, [filters]);
 
   // Lazy loading for industries when they come into view
   useEffect(() => {
@@ -194,7 +198,15 @@ export default function ProjectsPage() {
   const fetchIndustryStats = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/projects/stats');
+      
+      // Build query params from filters
+      const params = new URLSearchParams();
+      if (filters.difficulty) params.append('difficulty', filters.difficulty);
+      if (filters.industry) params.append('industry', filters.industry);
+      if (filters.duration) params.append('duration', filters.duration);
+      if (filters.acceptingApplications) params.append('status', filters.acceptingApplications === 'accepting' ? 'active' : 'draft');
+      
+      const response = await fetch(`/api/projects/stats?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
         setIndustryStats(data.stats || []);
@@ -236,6 +248,11 @@ export default function ProjectsPage() {
           limit: '4', // Load 4 projects per industry for hero
           industry: stat.industry,
         });
+        
+        // Apply filters
+        if (filters.difficulty) params.append('difficulty', filters.difficulty);
+        if (filters.duration) params.append('duration', filters.duration);
+        if (filters.acceptingApplications) params.append('status', filters.acceptingApplications === 'accepting' ? 'active' : 'draft');
         
         const response = await fetch(`/api/projects?${params}`);
         if (response.ok) {
@@ -304,6 +321,11 @@ export default function ProjectsPage() {
         limit: additionalProjectsNeeded.toString(),
         industry: industry,
       });
+      
+      // Apply filters
+      if (filters.difficulty) params.append('difficulty', filters.difficulty);
+      if (filters.duration) params.append('duration', filters.duration);
+      if (filters.acceptingApplications) params.append('status', filters.acceptingApplications === 'accepting' ? 'active' : 'draft');
       
       const response = await fetch(`/api/projects?${params}`);
       if (response.ok) {
@@ -398,6 +420,161 @@ export default function ProjectsPage() {
           </div>
         </div>
       )}
+      
+      {/* Filter Section */}
+      <div className={`bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 ${isViewingAsLearner ? 'mt-16' : ''}`}>
+        <div className="max-w-7xl mx-auto px-4 lg:px-8 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Filter Projects</h2>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="lg:hidden flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              {showFilters ? 'Hide Filters' : 'Show Filters'}
+            </button>
+          </div>
+          
+          <div className={`${showFilters ? 'block' : 'hidden'} lg:block`}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Industry Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Industry
+                </label>
+                <select
+                  value={filters.industry}
+                  onChange={(e) => setFilters({ ...filters, industry: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">All Industries</option>
+                  {industryStats.map(stat => (
+                    <option key={stat.industry} value={stat.industry}>{stat.industry}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Level/Difficulty Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Level
+                </label>
+                <select
+                  value={filters.difficulty}
+                  onChange={(e) => setFilters({ ...filters, difficulty: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">All Levels</option>
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="advanced">Advanced</option>
+                </select>
+              </div>
+
+              {/* Duration Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Duration
+                </label>
+                <select
+                  value={filters.duration}
+                  onChange={(e) => setFilters({ ...filters, duration: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Any Duration</option>
+                  <option value="0-10">0-10 hours</option>
+                  <option value="10-20">10-20 hours</option>
+                  <option value="20-40">20-40 hours</option>
+                  <option value="40+">40+ hours</option>
+                </select>
+              </div>
+
+              {/* Accepting Applications Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Application Status
+                </label>
+                <select
+                  value={filters.acceptingApplications}
+                  onChange={(e) => setFilters({ ...filters, acceptingApplications: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">All Projects</option>
+                  <option value="accepting">Accepting Applications</option>
+                  <option value="closed">Applications Closed</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Active Filters & Clear Button */}
+            {(filters.industry || filters.difficulty || filters.duration || filters.acceptingApplications) && (
+              <div className="flex items-center gap-3 mt-4 flex-wrap">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Active Filters:</span>
+                {filters.industry && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm">
+                    Industry: {filters.industry}
+                    <button
+                      onClick={() => setFilters({ ...filters, industry: '' })}
+                      className="hover:text-blue-600 dark:hover:text-blue-400"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </span>
+                )}
+                {filters.difficulty && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm">
+                    Level: {filters.difficulty}
+                    <button
+                      onClick={() => setFilters({ ...filters, difficulty: '' })}
+                      className="hover:text-blue-600 dark:hover:text-blue-400"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </span>
+                )}
+                {filters.duration && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm">
+                    Duration: {filters.duration} hours
+                    <button
+                      onClick={() => setFilters({ ...filters, duration: '' })}
+                      className="hover:text-blue-600 dark:hover:text-blue-400"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </span>
+                )}
+                {filters.acceptingApplications && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm">
+                    {filters.acceptingApplications === 'accepting' ? 'Accepting Applications' : 'Applications Closed'}
+                    <button
+                      onClick={() => setFilters({ ...filters, acceptingApplications: '' })}
+                      className="hover:text-blue-600 dark:hover:text-blue-400"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </span>
+                )}
+                <button
+                  onClick={() => setFilters({ difficulty: '', industry: '', duration: '', acceptingApplications: '' })}
+                  className="px-4 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white underline"
+                >
+                  Clear All
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
       
       {/* Hero Section with Featured Project */}
         <div className="relative">
@@ -549,174 +726,285 @@ export default function ProjectsPage() {
           </Carousel>
         </div>
 
-        { /* Show skeleton sections while loading */}
-        {showSkeletonSections && (
-          <>
-            {['Healthcare & Wellness', 'Technology & Software', 'Education & Training', 'Finance & Banking'].map((skeletonIndustry) => (
-              <div key={`skeleton-${skeletonIndustry}`} data-industry={skeletonIndustry}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-64 animate-pulse"></div>
-                  <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-20 animate-pulse"></div>
-                </div>
-                <div className="py-0">
-                  <Carousel itemWidthClass="w-72">
-                    {Array.from({ length: 8 }).map((_, index) => (
-                      <SkeletonProjectCard key={`skeleton-${skeletonIndustry}-${index}`} />
-                    ))}
-                  </Carousel>
-                </div>
+        {/* SOLUTION 1: Show filtered results in a single unified section when industry filter is active */}
+        {filters.industry ? (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  {filters.industry}
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  {totalProjects} {totalProjects === 1 ? 'project' : 'projects'} found
+                </p>
               </div>
-            ))}
+            </div>
+
+            {/* Show all projects in a grid instead of carousel when filtered */}
+            {totalProjects > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {Object.values(industrySections)
+                  .flatMap(section => section.projects)
+                  .map((project) => {
+                    const isApplied = appliedProjects[project.id];
+                    const applicationStatus = isApplied ? appliedProjects[project.id] : null;
+                    
+                    return (
+                      <div 
+                        key={project.id} 
+                        className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:scale-105 h-80 flex flex-col"
+                        onClick={() => handleProjectClick(project)}
+                      >
+                        <div className="relative h-40 overflow-hidden">
+                          <img
+                            src={project.image || getProjectImage(project.industry, project.domain)}
+                            alt={project.title}
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                          />
+                          
+                          {isApplied && (
+                            <div className={`absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg ${
+                              applicationStatus === 'approved' ? 'bg-green-600 text-white' :
+                              applicationStatus === 'rejected' ? 'bg-red-600 text-white' :
+                              'bg-blue-600 text-white'
+                            }`}>
+                              <span className="uppercase">
+                                {applicationStatus === 'approved' ? 'Accepted' :
+                                 applicationStatus === 'rejected' ? 'Rejected' :
+                                 'Applied'}
+                              </span>
+                            </div>
+                          )}
+                          
+                          <div className="absolute top-3 right-3 flex items-center gap-1 bg-black/70 backdrop-blur-sm text-white px-2 py-1 rounded-full text-sm">
+                            {project.status === 'active' ? (
+                              <span className="text-green-400">Accepting</span>
+                            ) : (
+                              <span className="text-red-400">Closed</span>
+                            )}
+                          </div>
+                          
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                          <div className="absolute bottom-3 left-3 right-3 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 opacity-0 group-hover:opacity-100">
+                            <div className="flex gap-2">
+                              {!isApplied ? (
+                                <>
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleApplyNow(project);
+                                    }}
+                                    className="flex-1 px-4 py-2 bg-white/20 backdrop-blur-sm text-white font-medium rounded-lg hover:bg-white/30 transition-colors"
+                                  >
+                                    Apply Now
+                                  </button>
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleLearnMore(project);
+                                    }}
+                                    className="flex-1 px-4 py-2 bg-white/10 backdrop-blur-sm text-white font-medium rounded-lg hover:bg-white/20 transition-colors border border-white/20"
+                                  >
+                                    Learn More
+                                  </button>
+                                </>
+                              ) : (
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleLearnMore(project);
+                                  }}
+                                  className="flex-1 px-4 py-2 bg-white/10 backdrop-blur-sm text-white font-medium rounded-lg hover:bg-white/20 transition-colors border border-white/20"
+                                >
+                                  View Details
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-5 flex flex-col flex-1 min-h-0">
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3 line-clamp-2 leading-tight">
+                            {project.title}
+                          </h3>
+                          <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-4 flex-1 leading-relaxed">
+                            {project.description}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            ) : (
+              <div className="text-center py-20">
+                <div className="text-gray-500 dark:text-gray-400 text-xl mb-4">
+                  No projects found matching your filters.
+                </div>
+                <button
+                  onClick={() => setFilters({ ...filters, industry: '' })}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Clear Industry Filter
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            {/* Show skeleton sections while loading */}
+            {showSkeletonSections && (
+              <>
+                {['Healthcare & Wellness', 'Technology & Software', 'Education & Training', 'Finance & Banking'].map((skeletonIndustry) => (
+                  <div key={`skeleton-${skeletonIndustry}`} data-industry={skeletonIndustry}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-64 animate-pulse"></div>
+                      <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-20 animate-pulse"></div>
+                    </div>
+                    <div className="py-0">
+                      <Carousel itemWidthClass="w-72">
+                        {Array.from({ length: 8 }).map((_, index) => (
+                          <SkeletonProjectCard key={`skeleton-${skeletonIndustry}-${index}`} />
+                        ))}
+                      </Carousel>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+
+            {/* Show all industry sections as carousels (original behavior) */}
+            {!showSkeletonSections && industryStats.map((stat) => {
+              const section = industrySections[stat.industry];
+              if (!section) return null;
+              
+              return (
+                <div key={stat.industry} data-industry={stat.industry}>
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+                      {stat.industry} ({stat.count} projects)
+                    </h2>
+                    <button 
+                      onClick={() => {
+                        setFilters({ ...filters, industry: stat.industry });
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-lg font-medium transition-colors flex items-center gap-1"
+                    >
+                      View All
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="py-0">
+                    <Carousel itemWidthClass="w-72">
+                      {section.loading && section.projects.length === 0 ? (
+                        Array.from({ length: 8 }).map((_, index) => (
+                          <SkeletonProjectCard key={`skeleton-${stat.industry}-${index}`} />
+                        ))
+                      ) : section.projects.length > 0 ? (
+                        section.projects.map((project, index) => {
+                          const isApplied = appliedProjects[project.id];
+                          const applicationStatus = isApplied ? appliedProjects[project.id] : null;
+                          
+                          return (
+                            <div 
+                              key={project.id} 
+                              className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:scale-105 hover:z-20 h-80 flex flex-col"
+                              onClick={() => handleProjectClick(project)}
+                            >
+                              <div className="relative h-40 overflow-hidden">
+                                <img
+                                  src={project.image || getProjectImage(project.industry, project.domain)}
+                                  alt={project.title}
+                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                />
+                                
+                                {isApplied && (
+                                  <div className={`absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg ${
+                                    applicationStatus === 'approved' ? 'bg-green-600 text-white' :
+                                    applicationStatus === 'rejected' ? 'bg-red-600 text-white' :
+                                    'bg-blue-600 text-white'
+                                  }`}>
+                                    <span className="uppercase">
+                                      {applicationStatus === 'approved' ? 'Accepted' :
+                                       applicationStatus === 'rejected' ? 'Rejected' :
+                                       'Applied'}
+                                    </span>
+                                  </div>
+                                )}
+                                
+                                <div className="absolute top-3 right-3 flex items-center gap-1 bg-black/70 backdrop-blur-sm text-white px-2 py-1 rounded-full text-sm">
+                                  {project.status === 'active' ? (
+                                    <span className="text-green-400">Accepting</span>
+                                  ) : (
+                                    <span className="text-red-400">Closed</span>
+                                  )}
+                                </div>
+                                
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                <div className="absolute bottom-3 left-3 right-3 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 opacity-0 group-hover:opacity-100">
+                                  <div className="flex gap-2">
+                                    {!isApplied ? (
+                                      <>
+                                        <button 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleApplyNow(project);
+                                          }}
+                                          className="flex-1 px-4 py-2 bg-white/20 backdrop-blur-sm text-white font-medium rounded-lg hover:bg-white/30 transition-colors"
+                                        >
+                                          Apply Now
+                                        </button>
+                                        <button 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleLearnMore(project);
+                                          }}
+                                          className="flex-1 px-4 py-2 bg-white/10 backdrop-blur-sm text-white font-medium rounded-lg hover:bg-white/20 transition-colors border border-white/20"
+                                        >
+                                          Learn More
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleLearnMore(project);
+                                        }}
+                                        className="flex-1 px-4 py-2 bg-white/10 backdrop-blur-sm text-white font-medium rounded-lg hover:bg-white/20 transition-colors border border-white/20"
+                                      >
+                                        View Details
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="p-5 flex flex-col flex-1 min-h-0">
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3 line-clamp-2 leading-tight">
+                                  {project.title}
+                                </h3>
+                                <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-4 flex-1 leading-relaxed">
+                                  {project.description}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="flex items-center justify-center p-8 text-gray-500 dark:text-gray-400">
+                          <span>No projects available in {stat.industry}</span>
+                        </div>
+                      )}
+                    </Carousel>
+                  </div>
+                </div>
+              );
+            })}
           </>
         )}
-
-        { /* for each industry section, show a carousel of projects */}
-        {!showSkeletonSections && industryStats.map((stat) => {
-          const section = industrySections[stat.industry];
-          if (!section) return null;
-          
-          return (
-          <div key={stat.industry} data-industry={stat.industry}>
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-                {stat.industry} ({stat.count} projects)
-              </h2>
-              <button 
-                onClick={() => router.push(`/projects/industry/${encodeURIComponent(stat.industry)}`)}
-                className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-lg font-medium transition-colors flex items-center gap-1"
-              >
-                View All
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
-            <div className="py-0">
-              <Carousel itemWidthClass="w-72">
-              {section.loading && section.projects.length === 0 ? (
-                // Show skeleton cards while loading
-                Array.from({ length: 8 }).map((_, index) => (
-                  <SkeletonProjectCard key={`skeleton-${stat.industry}-${index}`} />
-                ))
-              ) : section.projects.length > 0 ? (
-                // Show real projects
-                section.projects.map((project, index) => {
-                  const isApplied = appliedProjects[project.id];
-                  const applicationStatus = isApplied ? appliedProjects[project.id] : null;
-                  
-                  return (
-              <div 
-                key={project.id} 
-                                   className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:scale-105 hover:z-20 h-80 flex flex-col"
-                onClick={() => handleProjectClick(project)}
-              >
-                <div className="relative h-40 overflow-hidden">
-                  <img
-                    src={project.image || getProjectImage(project.industry, project.domain)}
-                    alt={project.title}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                  />
-                  
-                  {/* Applied Status Badge - top left corner */}
-                  {isApplied && (
-                    <div className={`absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg ${
-                      applicationStatus === 'approved' ? 'bg-green-600 text-white' :
-                      applicationStatus === 'rejected' ? 'bg-red-600 text-white' :
-                      'bg-blue-600 text-white'
-                    }`}>
-                      {applicationStatus === 'approved' && (
-                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                      {applicationStatus === 'rejected' && (
-                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                      {applicationStatus === 'pending' && (
-                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                      <span className="uppercase">
-                        {applicationStatus === 'approved' ? 'Accepted' :
-                         applicationStatus === 'rejected' ? 'Rejected' :
-                         'Applied'}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Rating in upper right corner */}
-                  <div className="absolute top-3 right-3 flex items-center gap-1 bg-black/70 backdrop-blur-sm text-white px-2 py-1 rounded-full text-sm">
-                    <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                    <span>4.{index + 5}</span>
-                  </div>
-                  
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="absolute bottom-3 left-3 right-3 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 opacity-0 group-hover:opacity-100">
-                    <div className="flex gap-2">
-                      {!isApplied ? (
-                        <>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleApplyNow(project);
-                            }}
-                            className="flex-1 px-4 py-2 bg-white/20 backdrop-blur-sm text-white font-medium rounded-lg hover:bg-white/30 transition-colors"
-                          >
-                            Apply Now
-                          </button>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleLearnMore(project);
-                            }}
-                            className="flex-1 px-4 py-2 bg-white/10 backdrop-blur-sm text-white font-medium rounded-lg hover:bg-white/20 transition-colors border border-white/20"
-                          >
-                            Learn More
-                          </button>
-                        </>
-                      ) : (
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleLearnMore(project);
-                          }}
-                          className="flex-1 px-4 py-2 bg-white/10 backdrop-blur-sm text-white font-medium rounded-lg hover:bg-white/20 transition-colors border border-white/20"
-                        >
-                          View Details
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="p-5 flex flex-col flex-1 min-h-0">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3 line-clamp-2 leading-tight">
-                    {project.title}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-4 flex-1 leading-relaxed">
-                    {project.description}
-                  </p>
-                </div>
-              </div>
-                  );
-                })
-              ) : (
-                // Show placeholder when no projects and not loading
-                <div className="flex items-center justify-center p-8 text-gray-500 dark:text-gray-400">
-                  <span>No projects available in {stat.industry}</span>
-                </div>
-              )}
-            </Carousel>
-          </div>
-        </div>
-          );
-        })}
         
-        {totalProjects > 0 && (
+        {/* Total count */}
+        {totalProjects > 0 && !filters.industry && (
           <div className="flex justify-center py-12">
             <div className="text-gray-500 dark:text-gray-400">
               {totalProjects} projects available across {industryStats.length} industries

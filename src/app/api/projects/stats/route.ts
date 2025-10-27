@@ -23,8 +23,36 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Bad Request' }, { status: 400 });
     }
 
+    // Parse filters from query params
+    const url = new URL(request.url);
+    const filters: any = {};
+    const industry = url.searchParams.get('industry');
+    const domain = url.searchParams.get('domain');
+    const status = url.searchParams.get('status');
+    const difficulty = url.searchParams.get('difficulty');
+    const duration = url.searchParams.get('duration');
+
+    if (industry) filters.industry = industry;
+    if (domain) filters.domain = domain;
+    if (status) filters.status = status;
+    if (difficulty) filters.difficulty = difficulty;
+    
+    // Parse duration filter
+    if (duration) {
+        if (duration === '40+') {
+            filters.estimatedHoursMin = 40;
+        } else {
+            const [min, max] = duration.split('-').map(Number);
+            if (!isNaN(min)) filters.estimatedHoursMin = min;
+            if (!isNaN(max)) filters.estimatedHoursMax = max;
+        }
+    }
+
     const projectConcept = new ProjectConcept();
-    const stats = await projectConcept._getIndustryCountByOrganization({ organizationId: session.currentContext.organizationId });
+    const stats = await projectConcept._getIndustryCountByOrganization({ 
+      organizationId: session.currentContext.organizationId,
+      filters: Object.keys(filters).length > 0 ? filters : undefined
+    });
     console.log("Stats", stats);
     // sort and filter out industries that have count = 0
     const sortedStats = stats.sort((a: { count: number }, b: { count: number }) => b.count - a.count).filter((stat: { count: number }) => stat.count > 0);
