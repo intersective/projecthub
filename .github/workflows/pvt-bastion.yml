@@ -52,6 +52,33 @@ jobs:
       - name: terraform init
         run: |
           terraform init
+      - name: .env create
+        if: ${{ github.event.inputs.action == 'deploy' }}
+        run: |
+          cat >> .env <<EOF
+          OPENAI_API_KEY=$OPENAI_API_KEY
+          EMAIL_USER=$EMAIL_USER
+          EMAIL_PASS=$EMAIL_PASS
+          EMAIL_HOST=sandbox.smtp.mailtrap.io
+          EMAIL_PORT=2525
+          EMAIL_PROVIDER=mailtrap
+
+          GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
+          GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
+          ADMIN_USERS="rodney@practera.com,wes@practera.com,megan.sitoy@practera.com,shawn@practera.com,chaw@practera.com,terence@practera.com"
+          AUTO_REGISTER_DOMAIN="practera.com"
+
+          DATABASE_URL=$DATABASE_URL
+          NEXT_PUBLIC_AUTH_URL=https://$ENDPOINT
+
+          EOF
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - name: terraform apply
         if: ${{ github.event.inputs.action == 'deploy' }}
         run: |
