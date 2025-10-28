@@ -129,5 +129,22 @@ resource "aws_instance" "bastion" {
               chmod 600 /home/ubuntu/.pgpass
               chown ubuntu:ubuntu /home/ubuntu/.pgpass
               
+              sudo -u ubuntu bash << 'NVMINSTALL'
+              export HOME=/home/ubuntu
+              cd /home/ubuntu
+              
+              curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+              
+              export NVM_DIR="$HOME/.nvm"
+              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+              
+              nvm install 22
+              nvm use 22
+              nvm alias default 22
+              
+              node --version
+              npm --version
+              NVMINSTALL
+
               EOF
 }
