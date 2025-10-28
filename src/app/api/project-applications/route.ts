@@ -52,7 +52,14 @@ export async function POST(request: NextRequest) {
 
     if (existingApplication) {
       return NextResponse.json(
-        { error: 'You have already applied to this project' },
+        { 
+          error: 'You have already applied to this project',
+          existingApplication: {
+            id: existingApplication.id,
+            status: existingApplication.status,
+            appliedAt: existingApplication.appliedAt
+          }
+        },
         { status: 409 }
       );
     }
