@@ -373,6 +373,22 @@ export default function ProjectsPage() {
 
   const handleApplyNow = (project: Project) => {
     console.log('Apply Now clicked for project:', project);
+    
+    // Check if user has already applied to this project
+    if (appliedProjects[project.id]) {
+      const status = appliedProjects[project.id];
+      const statusText = status === 'approved' ? 'has been approved' :
+                        status === 'rejected' ? 'was rejected' :
+                        'is currently pending review';
+      
+      alert(
+        `You have already applied to this project!\n\n` +
+        `Application Status: ${statusText}\n\n` +
+        `Please check your applications page for more details.`
+      );
+      return;
+    }
+    
     setSelectedProject(project);
     setShowApplicationModal(true);
     console.log('Modal state set to true');
@@ -589,7 +605,11 @@ export default function ProjectsPage() {
             const allProjects = Object.values(industrySections).flatMap(section => section.projects);
             
             if (allProjects.length > 0) {
-              return allProjects.slice(0, 3).map((project, index) => (
+              return allProjects.slice(0, 3).map((project, index) => {
+                const applicationStatus = appliedProjects[project.id];
+                const hasApplied = !!applicationStatus;
+                
+                return (
                 <div key={project.id} className="hero-project">
                   <img
                     src={project.image || getProjectImage(project.industry, project.domain)}
@@ -611,9 +631,21 @@ export default function ProjectsPage() {
                             AI Coach
                           </span>
                         )}
-                        <span className="px-3 py-1 bg-green-500/20 text-green-300 text-sm rounded-full border border-green-500/30">
-                          Available Now
-                        </span>
+                        {hasApplied ? (
+                          <span className={`px-3 py-1 text-sm rounded-full border font-semibold ${
+                            applicationStatus === 'approved' ? 'bg-green-500/20 text-green-300 border-green-500/30' :
+                            applicationStatus === 'rejected' ? 'bg-red-500/20 text-red-300 border-red-500/30' :
+                            'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                          }`}>
+                            {applicationStatus === 'approved' ? '✓ Approved' :
+                             applicationStatus === 'rejected' ? '✗ Rejected' :
+                             '⏱ Applied'}
+                          </span>
+                        ) : (
+                          <span className="px-3 py-1 bg-green-500/20 text-green-300 text-sm rounded-full border border-green-500/30">
+                            Available Now
+                          </span>
+                        )}
                       </div>
                         <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold mb-2 lg:mb-3 leading-tight text-white break-words hyphens-auto max-w-4xl line-clamp-3">{project.title}</h1>
                         <p className="text-lg lg:text-xl text-gray-300 mb-2 lg:mb-3 leading-relaxed line-clamp-2 lg:line-clamp-3 max-w-2xl">
@@ -628,15 +660,44 @@ export default function ProjectsPage() {
                       
                       {/* Action buttons - always at bottom */}
                       <div className="flex items-center gap-4 flex-shrink-0 pt-6 lg:pt-8">
-                        <button 
-                          onClick={() => handleApplyNow(project)}
-                          className="px-6 lg:px-8 py-3 lg:py-4 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all duration-200 flex items-center gap-2 lg:gap-3 text-base lg:text-lg shadow-lg"
-                        >
-                          <svg className="w-5 h-5 lg:w-6 lg:h-6" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M8 5v14l11-7z"/>
-                          </svg>
-                          Apply Now
-                        </button>
+                        {hasApplied ? (
+                          <div className={`px-6 lg:px-8 py-3 lg:py-4 rounded-xl font-bold flex items-center gap-2 lg:gap-3 text-base lg:text-lg shadow-lg ${
+                            applicationStatus === 'approved' ? 'bg-green-600 text-white' :
+                            applicationStatus === 'rejected' ? 'bg-red-600 text-white' :
+                            'bg-blue-600 text-white'
+                          }`}>
+                            {applicationStatus === 'approved' && (
+                              <svg className="w-5 h-5 lg:w-6 lg:h-6" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                            {applicationStatus === 'rejected' && (
+                              <svg className="w-5 h-5 lg:w-6 lg:h-6" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                            {applicationStatus === 'pending' && (
+                              <svg className="w-5 h-5 lg:w-6 lg:h-6" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                            <span>
+                              {applicationStatus === 'approved' ? 'Application Accepted' :
+                               applicationStatus === 'rejected' ? 'Application Rejected' :
+                               'Application Submitted'}
+                            </span>
+                          </div>
+                        ) : (
+                          <button 
+                            onClick={() => handleApplyNow(project)}
+                            className="px-6 lg:px-8 py-3 lg:py-4 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all duration-200 flex items-center gap-2 lg:gap-3 text-base lg:text-lg shadow-lg"
+                          >
+                            <svg className="w-5 h-5 lg:w-6 lg:h-6" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            Apply Now
+                          </button>
+                        )}
                         <button 
                           onClick={() => handleLearnMore(project)}
                           className="px-4 lg:px-6 py-3 lg:py-4 bg-white/10 text-white font-semibold rounded-xl hover:bg-white/20 transition-all duration-200 backdrop-blur-sm text-base lg:text-lg border border-white/20"
@@ -647,7 +708,8 @@ export default function ProjectsPage() {
                     </div>
                   </div>
                 </div>
-              ));
+                );
+              });
             } else {
               // Show demo projects as fallback
               return demoProjects.slice(0, 3).map((demoProject, index) => {

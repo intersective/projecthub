@@ -179,11 +179,39 @@ export default function ProjectApplicationModal({ project, isOpen, onClose, onAp
         onApplicationSubmitted?.(); // Call the callback to refresh applied projects
         onClose();
       } else {
-        throw new Error('Failed to submit application');
+        // Parse error response
+        const errorData = await response.json();
+        
+        // Handle specific error cases
+        if (response.status === 409) {
+          // Already applied to this project
+          const existingApp = errorData.existingApplication;
+          const statusText = existingApp?.status === 'approved' ? 'has been approved' :
+                           existingApp?.status === 'rejected' ? 'was rejected' :
+                           'is currently pending review';
+          
+          alert(
+            `You have already applied to this project!\n\n` +
+            `Application Status: ${statusText}\n` +
+            `Applied on: ${existingApp?.appliedAt ? new Date(existingApp.appliedAt).toLocaleDateString() : 'N/A'}\n\n` +
+            `Please check your applications page for more details.`
+          );
+          
+          // Refresh the applied projects list to ensure UI is in sync
+          onApplicationSubmitted?.();
+        } else if (response.status === 404) {
+          alert('This project is no longer available. It may have been removed or completed.');
+        } else if (response.status === 401) {
+          alert('Your session has expired. Please log in again.');
+        } else {
+          alert(errorData.error || 'Failed to submit application. Please try again.');
+        }
+        
+        onClose();
       }
     } catch (error) {
       console.error('Error submitting application:', error);
-      alert('Failed to submit application. Please try again.');
+      alert('An unexpected error occurred. Please try again.');
     } finally {
       setSubmitting(false);
     }
