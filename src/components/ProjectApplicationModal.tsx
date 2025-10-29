@@ -27,6 +27,12 @@ interface ProjectApplicationModalProps {
   onApplicationSubmitted?: () => void; // Callback when application is successfully submitted
 }
 
+interface UserProfile {
+  linkedinUrl?: string;
+  bio?: string;
+  website?: string;
+}
+
 export default function ProjectApplicationModal({ project, isOpen, onClose, onApplicationSubmitted }: ProjectApplicationModalProps) {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
@@ -37,25 +43,91 @@ export default function ProjectApplicationModal({ project, isOpen, onClose, onAp
   const [recordedVideo, setRecordedVideo] = useState<Blob | null>(null);
   const [videoUrl, setVideoUrl] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
+  // Fetch user profile data and auto-fill form
   useEffect(() => {
-    if (!isOpen) {
-      // Clean up video stream when modal closes
+    const fetchProfile = async () => {
+      if (!user || profileLoaded) return;
+      
+      try {
+        const res = await fetch('/api/profile');
+        if (res.ok) {
+          const data = await res.json();
+          const profile: UserProfile = data.profile;
+          
+          // Only auto-fill if the form is empty (first time opening)
+          setFormData(prev => ({
+            linkedinUrl: prev.linkedinUrl || profile.linkedinUrl || '',
+            message: prev.message || '',
+          }));
+          setProfileLoaded(true);
+        }
+      } catch (error) {
+        console.error('Failed to fetch profile:', error);
+      }
+    };
+
+    if (isOpen && user) {
+      fetchProfile();
+    }
+  }, [isOpen, user, profileLoaded]);
+
+  // Handle project change - reset form when switching to a different project
+  useEffect(() => {
+    if (project && project.id !== currentProjectId) {
+      // Clean up video when switching projects
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
       }
-      // Reset form
-      setFormData({ linkedinUrl: '', message: '' });
+      
+      // Reset form for new project, but keep linkedinUrl from profile
+      const resetForm = async () => {
+        try {
+          const res = await fetch('/api/profile');
+          if (res.ok) {
+            const data = await res.json();
+            const profile: UserProfile = data.profile;
+            setFormData({
+              linkedinUrl: profile.linkedinUrl || '',
+              message: '',
+            });
+          } else {
+            setFormData({ linkedinUrl: '', message: '' });
+          }
+        } catch (error) {
+          setFormData({ linkedinUrl: '', message: '' });
+        }
+      };
+      
+      resetForm();
       setRecordedVideo(null);
       setVideoUrl('');
       setIsRecording(false);
+      setCurrentProjectId(project.id);
     }
-  }, [isOpen]);
+  }, [project, currentProjectId]);
+
+  // Clean up video stream when modal closes (but preserve form data)
+  useEffect(() => {
+    if (!isOpen) {
+      // Only clean up video stream, don't reset form data
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      // Stop recording if in progress
+      if (isRecording) {
+        setIsRecording(false);
+      }
+    }
+  }, [isOpen, isRecording]);
 
   const startRecording = async () => {
     try {
@@ -176,6 +248,14 @@ export default function ProjectApplicationModal({ project, isOpen, onClose, onAp
 
       if (response.ok) {
         alert('Application submitted successfully!');
+        
+        // Clear form data after successful submission
+        setFormData({ linkedinUrl: '', message: '' });
+        setRecordedVideo(null);
+        setVideoUrl('');
+        setIsRecording(false);
+        setProfileLoaded(false);
+        
         onApplicationSubmitted?.(); // Call the callback to refresh applied projects
         onClose();
       } else {
