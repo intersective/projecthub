@@ -127,6 +127,7 @@ export default function ProjectsPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showAiForm, setShowAiForm] = useState(false);
   const [appliedProjects, setAppliedProjects] = useState<Record<string, string>>({});
+  const [userIndustryPreferences, setUserIndustryPreferences] = useState<string[]>([]);
   const [filters, setFilters] = useState({
     difficulty: '',
     industry: '',
@@ -171,14 +172,15 @@ export default function ProjectsPage() {
     
     fetchIndustryStats();
     fetchAppliedProjects();
+    fetchUserPreferences();
   }, []);
 
-  // Refetch when filters change
+  // Refetch when filters change or preferences change
   useEffect(() => {
     if (initializedRef.current) {
       fetchIndustryStats();
     }
-  }, [filters]);
+  }, [filters, userIndustryPreferences]);
 
   // Lazy loading for industries when they come into view
   useEffect(() => {
@@ -234,6 +236,19 @@ export default function ProjectsPage() {
     }
   };
 
+  // Fetch user's industry preferences
+  const fetchUserPreferences = async () => {
+    try {
+      const res = await fetch('/api/profile');
+      if (res.ok) {
+        const data = await res.json();
+        setUserIndustryPreferences(data.profile?.industryPreferences || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user preferences:', error);
+    }
+  };
+
   // Phase 1: Fetch industry statistics
   const fetchIndustryStats = async () => {
     try {
@@ -249,12 +264,23 @@ export default function ProjectsPage() {
       const response = await fetch(`/api/projects/stats?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
-        setIndustryStats(data.stats || []);
+        
+        // Sort stats by user preferences first, then by count
+        const sortedStats = [...(data.stats || [])].sort((a: IndustryStats, b: IndustryStats) => {
+          const aIsPreferred = userIndustryPreferences.includes(a.industry);
+          const bIsPreferred = userIndustryPreferences.includes(b.industry);
+          
+          if (aIsPreferred && !bIsPreferred) return -1;
+          if (!aIsPreferred && bIsPreferred) return 1;
+          return b.count - a.count; // Secondary sort by count
+        });
+        
+        setIndustryStats(sortedStats);
         setTotalProjects(data.totalProjects || 0);
         
         // Initialize industry sections
         const sections: { [key: string]: IndustrySection } = {};
-        data.stats.forEach((stat: IndustryStats) => {
+        sortedStats.forEach((stat: IndustryStats) => {
           sections[stat.industry] = {
             industry: stat.industry,
             count: stat.count,
@@ -265,7 +291,7 @@ export default function ProjectsPage() {
         setIndustrySections(sections);
         
         // Load hero projects immediately (for top 3 industries, up to 12 projects total)
-        loadHeroProjects(data.stats.slice(0, 3));
+        loadHeroProjects(sortedStats.slice(0, 3));
         
         // Hide skeleton sections once we have real data
         setShowSkeletonSections(false);
@@ -1004,11 +1030,40 @@ export default function ProjectsPage() {
               const section = industrySections[stat.industry];
               if (!section) return null;
               
+              const isPreferred = userIndustryPreferences.includes(stat.industry);
+              
               return (
-                <div key={stat.industry} data-industry={stat.industry}>
-                  <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-                      {stat.industry} ({stat.count} projects)
+                <div key={stat.industry} data-industry={stat.industry} className={isPreferred ? 'relative' : ''}>
+                  {/* Add preference indicator */}
+                  {isPreferred && (
+                    <div className="absolute -top-2 left-0 z-10">
+                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full text-xs font-semibold shadow-lg">
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                        Your Interest
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className={`flex items-center justify-between mb-2 ${isPreferred ? 'pt-6' : ''}`}>
+                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                      {stat.industry}
+                      <span className="text-lg font-normal text-gray-600 dark:text-gray-400">
+                        ({stat.count} {stat.count === 1 ? 'project' : 'projects'})
+                      </span>
+                      {isPreferred && (
+                        <div className="group relative">
+                          <span className="text-blue-600 dark:text-blue-400">
+                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                            </svg>
+                          </span>
+                          <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                            This is one of your preferred industries
+                          </span>
+                        </div>
+                      )}
                     </h2>
                     <button 
                       onClick={() => {

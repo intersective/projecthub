@@ -1,0 +1,31 @@
+concept IndustryPreference {
+  state:
+    id: String
+    userId: String
+    industry: String
+    createdAt: Date
+    updatedAt: Date
+
+  actions:
+    // Set user's industry preferences (replaces all existing)
+    setPreferences(userId: String, industries: String[]): { preferences: IndustryPreference[] } | { error: String }
+    
+    // Add a single preference
+    addPreference(userId: String, industry: String): { preference: IndustryPreference } | { error: String }
+    
+    // Remove a single preference
+    removePreference(userId: String, industry: String): { success: Boolean } | { error: String }
+    
+    // Clear all preferences for a user
+    clearPreferences(userId: String): { success: Boolean } | { error: String }
+
+  queries:
+    // Get preferences for a specific user
+    _getByUserId(userId: String): IndustryPreference[]
+    
+    // Get all users interested in an industry
+    _getUsersByIndustry(industry: String): IndustryPreference[]
+    
+    // Get available industries from projects
+    _getAvailableIndustries(): String[]
+}

@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import { UserConcept } from '@/lib/concepts/common/user';
 import { ProfileConcept } from '@/lib/concepts/common/profile';
 import { RelationshipConcept } from '@/lib/concepts/common/relationship';
+import { IndustryPreferenceConcept } from '@/lib/concepts/common/industry-preference';
 
 /**
  * GET /api/profile
@@ -23,6 +24,7 @@ export async function GET(request: NextRequest) {
     const userConcept = new UserConcept();
     const profileConcept = new ProfileConcept();
     const relationshipConcept = new RelationshipConcept();
+    const industryPreferenceConcept = new IndustryPreferenceConcept();
 
     // Get user data
     const users = await userConcept._getById({ id: session.user.id });
@@ -46,6 +48,11 @@ export async function GET(request: NextRequest) {
       profile = profiles[0] || null;
     }
 
+    // Get industry preferences
+    const preferences = await industryPreferenceConcept._getByUserId({ 
+      userId: user.id 
+    });
+
     // Combine user and profile data
     const combinedProfile = {
       id: user.id,
@@ -61,6 +68,7 @@ export async function GET(request: NextRequest) {
       company: profile?.company || '',
       timezone: profile?.timezone || 'UTC',
       profileType: profile?.profileType || 'learner',
+      industryPreferences: preferences.map(p => p.industry)
     };
 
     return NextResponse.json({ profile: combinedProfile });
@@ -92,6 +100,7 @@ export async function PUT(request: NextRequest) {
     const userConcept = new UserConcept();
     const profileConcept = new ProfileConcept();
     const relationshipConcept = new RelationshipConcept();
+    const industryPreferenceConcept = new IndustryPreferenceConcept();
 
     // Get current user
     const users = await userConcept._getById({ id: session.user.id });
@@ -99,6 +108,21 @@ export async function PUT(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Handle industry preferences update
+    if (body.industryPreferences !== undefined) {
+      const prefResult = await industryPreferenceConcept.setPreferences({
+        userId: user.id,
+        industries: body.industryPreferences || []
+      });
+
+      if ('error' in prefResult) {
+        return NextResponse.json(
+          { error: prefResult.error },
+          { status: 400 }
+        );
+      }
     }
 
     // Update user fields (name, image)
@@ -204,6 +228,11 @@ export async function PUT(request: NextRequest) {
     const updatedUsers = await userConcept._getById({ id: user.id });
     const updatedUser = updatedUsers[0];
 
+    // Get updated industry preferences
+    const updatedPreferences = await industryPreferenceConcept._getByUserId({ 
+      userId: user.id 
+    });
+
     // Combine and return updated profile
     const combinedProfile = {
       id: updatedUser.id,
@@ -218,6 +247,7 @@ export async function PUT(request: NextRequest) {
       company: profile?.company || '',
       timezone: profile?.timezone || 'UTC',
       profileType: profile?.profileType || 'learner',
+      industryPreferences: updatedPreferences.map(p => p.industry)
     };
 
     return NextResponse.json({ profile: combinedProfile });
