@@ -1,0 +1,38 @@
+concept ProjectPreference
+
+purpose: Manage learner project preferences and rankings
+
+state:
+  preference: one ProjectPreference
+    userId: one String
+    projectId: one String
+    rank: one Number
+    createdAt: one Date
+    updatedAt: one Date
+
+actions:
+  setPreferences(userId: String, preferences: Array<{projectId: String, rank: Number}>):
+    // Set or update all preferences for a user (max 5)
+    // Replaces existing preferences with new ones
+    
+  removePreference(userId: String, projectId: String):
+    // Remove a specific preference
+    
+  getUserPreferences(userId: String):
+    // Get all preferences for a user, ordered by rank
+    
+  clearUserPreferences(userId: String):
+    // Remove all preferences for a user
+    
+  getProjectPreferenceStats(projectId: String):
+    // Get statistics about how many users prefer this project
+
+queries:
+  _getByUser(userId: String) -> Array<ProjectPreference>:
+    // Get all preferences for a user
+    
+  _getByProject(projectId: String) -> Array<ProjectPreference>:
+    // Get all users who prefer this project
+    
+  _getByRank(userId: String, rank: Number) -> ProjectPreference:
+    // Get the project at a specific rank for a user

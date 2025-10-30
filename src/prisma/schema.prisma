@@ -438,3 +438,18 @@ model Tag {
   @@index([name])
   @@map("tag")
 }
+
+model ProjectPreference {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String
+  rank      Int      // 1-5, where 1 is most preferred
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, projectId])
+  @@unique([userId, rank])
+  @@index([userId])
+  @@index([projectId])
+  @@map("project_preference")
+}
