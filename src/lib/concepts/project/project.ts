@@ -485,12 +485,26 @@ export class ProjectConcept {
         where,
         orderBy: { createdAt: 'desc' },
         skip: input.skip || 0,
-        take: input.take || 20
+        take: input.take || 20,
+        include: {
+          _count: {
+            select: { 
+              applications: true 
+            }
+          }
+        }
       });
+
+      // Map projects to include applicationCount
+      const projectsWithCounts = projects.map(p => ({
+        ...p,
+        applicationCount: p._count?.applications || 0,
+        _count: undefined // Remove _count from final output
+      }));
 
       const hasMore = (input.skip || 0) + projects.length < total;
 
-      return { projects, total, hasMore };
+      return { projects: projectsWithCounts as any, total, hasMore };
     } catch {
       return { projects: [], total: 0, hasMore: false };
     }

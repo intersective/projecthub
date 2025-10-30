@@ -24,6 +24,7 @@ interface Project {
   createdAt: string;
   scope?: string;
   learningObjectives?: string[];
+  applicationCount?: number;
 }
 
 interface IndustryStats {
@@ -51,6 +52,45 @@ const getDifficultyColor = (difficulty: string) => {
     case 'intermediate': return 'bg-yellow-500';
     case 'advanced': return 'bg-red-500';
     default: return 'bg-gray-500';
+  }
+};
+
+// Function to get application count display information
+const getApplicationCountDisplay = (count: number | undefined) => {
+  if (count === undefined) return null;
+  
+  if (count === 0) {
+    return {
+      bgColor: 'bg-gradient-to-r from-green-500 to-emerald-600',
+      text: 'Be the first!',
+      textColor: 'text-white',
+      icon: '⭐',
+      tooltip: 'No applications yet - great opportunity!'
+    };
+  } else if (count < 5) {
+    return {
+      bgColor: 'bg-gradient-to-r from-blue-500 to-cyan-600',
+      text: `${count} ${count === 1 ? 'application' : 'applications'}`,
+      textColor: 'text-white',
+      icon: '👥',
+      tooltip: 'Low competition - good chance!'
+    };
+  } else if (count < 15) {
+    return {
+      bgColor: 'bg-gradient-to-r from-yellow-500 to-amber-600',
+      text: `${count} applications`,
+      textColor: 'text-white',
+      icon: '🔥',
+      tooltip: 'Popular project - moderate competition'
+    };
+  } else {
+    return {
+      bgColor: 'bg-gradient-to-r from-red-500 to-rose-600',
+      text: `${count} applications`,
+      textColor: 'text-white',
+      icon: '⚡',
+      tooltip: 'High competition - stand out with your application!'
+    };
   }
 };
 
@@ -646,6 +686,18 @@ export default function ProjectsPage() {
                             Available Now
                           </span>
                         )}
+                        {/* Application count badge in hero */}
+                        {(() => {
+                          const countDisplay = getApplicationCountDisplay(project.applicationCount);
+                          return countDisplay && (
+                            <span 
+                              className={`px-3 py-1 text-sm rounded-full border font-semibold ${countDisplay.bgColor}/20 ${countDisplay.textColor.replace('text-white', 'text-gray-200')} border-white/30`}
+                              title={countDisplay.tooltip}
+                            >
+                              {countDisplay.icon} {countDisplay.text}
+                            </span>
+                          );
+                        })()}
                       </div>
                         <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold mb-2 lg:mb-3 leading-tight text-white break-words hyphens-auto max-w-4xl line-clamp-3">{project.title}</h1>
                         <p className="text-lg lg:text-xl text-gray-300 mb-2 lg:mb-3 leading-relaxed line-clamp-2 lg:line-clamp-3 max-w-2xl">
@@ -838,6 +890,20 @@ export default function ProjectsPage() {
                             </div>
                           )}
                           
+                          {/* Application count badge */}
+                          {(() => {
+                            const countDisplay = getApplicationCountDisplay(project.applicationCount);
+                            return countDisplay && (
+                              <div 
+                                className={`absolute bottom-3 left-3 flex items-center gap-1.5 px-2.5 py-1.5 ${countDisplay.bgColor} backdrop-blur-sm rounded-full text-xs ${countDisplay.textColor} font-bold shadow-lg transition-all duration-300 group-hover:scale-105`}
+                                title={countDisplay.tooltip}
+                              >
+                                <span>{countDisplay.icon}</span>
+                                <span>{countDisplay.text}</span>
+                              </div>
+                            );
+                          })()}
+                          
                           <div className="absolute top-3 right-3 flex items-center gap-1 bg-black/70 backdrop-blur-sm text-white px-2 py-1 rounded-full text-sm">
                             {project.status === 'active' ? (
                               <span className="text-green-400">Accepting</span>
@@ -994,6 +1060,20 @@ export default function ProjectsPage() {
                                     </span>
                                   </div>
                                 )}
+                                
+                                {/* Application count badge */}
+                                {(() => {
+                                  const countDisplay = getApplicationCountDisplay(project.applicationCount);
+                                  return countDisplay && (
+                                    <div 
+                                      className={`absolute bottom-3 left-3 flex items-center gap-1.5 px-2.5 py-1.5 ${countDisplay.bgColor} backdrop-blur-sm rounded-full text-xs ${countDisplay.textColor} font-bold shadow-lg transition-all duration-300 group-hover:scale-105`}
+                                      title={countDisplay.tooltip}
+                                    >
+                                      <span>{countDisplay.icon}</span>
+                                      <span>{countDisplay.text}</span>
+                                    </div>
+                                  );
+                                })()}
                                 
                                 <div className="absolute top-3 right-3 flex items-center gap-1 bg-black/70 backdrop-blur-sm text-white px-2 py-1 rounded-full text-sm">
                                   {project.status === 'active' ? (
