@@ -6,6 +6,7 @@ import { CampaignConcept } from "@/lib/concepts/project/campaign";
 import { TeamConcept } from "@/lib/concepts/common/team";
 import { ProfileConcept } from "@/lib/concepts/common/profile";
 import { ProjectConcept } from "@/lib/concepts/project/project";
+import { ProjectRatingConcept } from "@/lib/concepts/project/projectRating";
 //import { AssignmentConcept } from "@/lib/concepts/wip/assignment";
 import { UserConcept } from "@/lib/concepts/common/user";
 import { RoleConcept } from "@/lib/concepts/common/role";
@@ -36,6 +37,8 @@ import {
   // makeNotificationWorkflowSyncs,
   // makeContentManagementSyncs
 } from "@/lib/syncs";
+// Note: ProjectRating syncs not needed - using direct concept calls in API routes
+// import { makeProjectRatingSyncs } from "@/lib/syncs/project/projectRating.sync";
 
 /**
  * Concept Engine Bootstrap (Server)
@@ -73,6 +76,7 @@ const concepts = {
   Team: new TeamConcept(),
   Profile: new ProfileConcept(),
   Project: new ProjectConcept(),
+  ProjectRating: new ProjectRatingConcept(),
   //Assignment: new AssignmentConcept(),
   User: new UserConcept(),
   Role: new RoleConcept(),
@@ -91,7 +95,7 @@ const concepts = {
 // Instrument for reactivity
 // Instrumentation wraps action methods so the engine can observe invocations,
 // assign flow tokens, and trigger synchronizations automatically.
-const { API, Organization, Campaign, Team, Profile, Project, User, Role, Membership, Session, Relationship, Auth } = Sync.instrument(concepts);
+const { API, Organization, Campaign, Team, Profile, Project, ProjectRating, User, Role, Membership, Session, Relationship, Auth } = Sync.instrument(concepts);
 
 // Register synchronizations
 // Each `make*Syncs` returns a map of sync functions that connect concept actions
@@ -101,6 +105,7 @@ const orgSyncs = makeApiOrganizationSyncs(API, Organization, User, Membership, R
 const teamSyncs = makeApiTeamSyncs(API, Team, User, Membership, Role, Session);
 const campaignSyncs = makeApiCampaignSyncs(API, Campaign);
 const projectSyncs = makeApiProjectSyncs(API, Project, Relationship);
+// const projectRatingSyncs = makeProjectRatingSyncs(API, ProjectRating);
 //const skillSyncs = makeApiSkillSyncs(API, Skill);
 const relationshipSyncs = makeApiRelationshipSyncs(API, Relationship);
 const rbacSyncs = makeHierarchicalRBACsyncs(API, User, Role, Membership, Session, Organization, Campaign, Project, Team);
@@ -115,10 +120,12 @@ Sync.register({
   // ...teamSyncs,
   // ...campaignSyncs,
   ...projectSyncs,
+  // Note: ProjectRating uses direct concept calls in API routes, no syncs needed
+  // ...projectRatingSyncs,
   ...projectExtractionSyncs,
   // ...relationshipSyncs,
   // ...rbacSyncs,
 });
 
 // Export for API routes and server actions
-export { API, Organization, Campaign, Team, Profile, Project, User, Role, Membership, Session, Relationship, Sync };
+export { API, Organization, Campaign, Team, Profile, Project, ProjectRating, User, Role, Membership, Session, Relationship, Sync };

@@ -15,6 +15,15 @@ interface DashboardStats {
   pendingApplications: number;
 }
 
+interface ProjectPreference {
+  projectId: string;
+  projectTitle: string;
+  averageRating: number;
+  totalRatings: number;
+  topRatedBy: number;
+  ratingDistribution: Record<number, number>;
+}
+
 export default function DashboardPage() {
   const { hasRole } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
@@ -29,6 +38,7 @@ export default function DashboardPage() {
     pendingApplications: 0
   });
   const [loading, setLoading] = useState(true);
+  const [topPreferences, setTopPreferences] = useState<ProjectPreference[]>([]);
 
   useEffect(() => {
     fetchStats();
@@ -61,6 +71,15 @@ export default function DashboardPage() {
           totalAssignments: data.totalAssignments,
           pendingApplications: data.pendingApplications,
         });
+      }
+
+      // Fetch project preferences
+      const prefResponse = await fetch('/api/projects/rating-analytics?limit=5');
+      if (prefResponse.ok) {
+        const prefData = await prefResponse.json();
+        if (prefData.success && prefData.analytics) {
+          setTopPreferences(prefData.analytics);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch stats:', error);
@@ -239,6 +258,131 @@ export default function DashboardPage() {
                 Consolidate Industries
               </a>
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Project Preferences Section */}
+      <div className="card">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Top Learner Project Preferences
+          </h3>
+          <a 
+            href="/projects" 
+            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+          >
+            View All Projects →
+          </a>
+        </div>
+        
+        {topPreferences.length > 0 ? (
+          <div className="space-y-4">
+            {topPreferences.map((pref, index) => (
+              <div key={pref.projectId} className="border dark:border-gray-700 rounded-lg p-4">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex-1 flex items-start gap-3">
+                    <span className="text-2xl font-bold text-gray-400 dark:text-gray-500">
+                      #{index + 1}
+                    </span>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900 dark:text-white mb-1">
+                        {pref.projectTitle}
+                      </h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {pref.totalRatings} {pref.totalRatings === 1 ? 'rating' : 'ratings'}
+                        {pref.topRatedBy > 0 && ` • ${pref.topRatedBy} learner${pref.topRatedBy === 1 ? '' : 's'} rated 5★`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                      {pref.averageRating.toFixed(1)}
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Avg Rating
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Rating Distribution Bar */}
+                <div className="pt-3 border-t dark:border-gray-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs text-gray-600 dark:text-gray-400 w-20">
+                      Distribution:
+                    </span>
+                    <div className="flex-1 flex gap-1 h-16">
+                      {[1, 2, 3, 4, 5].map(rating => {
+                        const count = pref.ratingDistribution[rating] || 0;
+                        const percentage = pref.totalRatings > 0 
+                          ? (count / pref.totalRatings) * 100 
+                          : 0;
+                        return (
+                          <div 
+                            key={rating}
+                            className="flex-1 flex flex-col items-center justify-end"
+                            title={`${count} learner${count === 1 ? '' : 's'} rated as preference #${rating}`}
+                          >
+                            <div className="w-full flex flex-col items-center justify-end h-full">
+                              <div 
+                                className={`w-full rounded-t transition-all ${
+                                  rating === 1 ? 'bg-green-500 dark:bg-green-600' :
+                                  rating === 2 ? 'bg-blue-500 dark:bg-blue-600' :
+                                  rating === 3 ? 'bg-yellow-500 dark:bg-yellow-600' :
+                                  rating === 4 ? 'bg-orange-500 dark:bg-orange-600' :
+                                  'bg-red-500 dark:bg-red-600'
+                                }`}
+                                style={{ 
+                                  height: `${Math.max(percentage * 0.8, percentage > 0 ? 20 : 0)}%`,
+                                }}
+                              />
+                            </div>
+                            <div className="text-center mt-1">
+                              <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                                #{rating}
+                              </span>
+                              <span className="block text-xs text-gray-500 dark:text-gray-500">
+                                {count}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">
+                    1 = Most Preferred • 5 = Least Preferred
+                  </p>
+                </div>
+                
+                <div className="mt-3 flex gap-2">
+                  <a 
+                    href={`/projects/${pref.projectId}`}
+                    className="btn btn-secondary btn-sm flex-1 text-center"
+                  >
+                    View Project
+                  </a>
+                  <a 
+                    href={`/teams?project=${pref.projectId}`}
+                    className="btn btn-primary btn-sm flex-1 text-center"
+                  >
+                    Assign Teams
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-600 dark:text-gray-400">
+              No project ratings yet. Learners haven't started rating projects.
+            </p>
+            <a 
+              href="/projects" 
+              className="mt-4 inline-block text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              Browse Projects →
+            </a>
           </div>
         )}
       </div>

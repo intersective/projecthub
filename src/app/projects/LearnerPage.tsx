@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Carousel from '@/components/Carousel';
 import ProjectDetailModal from '@/components/ProjectDetailModal';
 import ProjectApplicationModal from '@/components/ProjectApplicationModal';
+import ProjectRating from '@/components/ProjectRating';
 import SkeletonProjectCard, { SkeletonHeroCard } from '@/components/SkeletonProjectCard';
 import { useAuth, ROLES } from '@/lib/auth-context';
 import { demoProjects } from '@/lib/demo/projects';
@@ -87,6 +88,7 @@ export default function ProjectsPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showAiForm, setShowAiForm] = useState(false);
   const [appliedProjects, setAppliedProjects] = useState<Record<string, string>>({});
+  const [projectRatings, setProjectRatings] = useState<Record<string, number>>({});
   const [filters, setFilters] = useState({
     difficulty: '',
     industry: '',
@@ -131,6 +133,7 @@ export default function ProjectsPage() {
     
     fetchIndustryStats();
     fetchAppliedProjects();
+    fetchUserRatings();
   }, []);
 
   // Refetch when filters change
@@ -191,6 +194,24 @@ export default function ProjectsPage() {
       }
     } catch (error) {
       console.error('Failed to fetch applied projects:', error);
+    }
+  };
+
+  const fetchUserRatings = async () => {
+    try {
+      const response = await fetch('/api/projects/my-ratings');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.ratings) {
+          const ratingsMap: Record<string, number> = {};
+          data.ratings.forEach((rating: any) => {
+            ratingsMap[rating.projectId] = rating.rating;
+          });
+          setProjectRatings(ratingsMap);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch user ratings:', error);
     }
   };
 
@@ -891,6 +912,20 @@ export default function ProjectsPage() {
                           <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-4 flex-1 leading-relaxed">
                             {project.description}
                           </p>
+                          
+                          {/* Project Rating */}
+                          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <ProjectRating
+                              projectId={project.id}
+                              currentRating={projectRatings[project.id]}
+                              onRatingChange={(newRating) => {
+                                setProjectRatings(prev => ({
+                                  ...prev,
+                                  [project.id]: newRating
+                                }));
+                              }}
+                            />
+                          </div>
                         </div>
                       </div>
                     );
@@ -1048,6 +1083,20 @@ export default function ProjectsPage() {
                                 <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-4 flex-1 leading-relaxed">
                                   {project.description}
                                 </p>
+                                
+                                {/* Project Rating */}
+                                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                  <ProjectRating
+                                    projectId={project.id}
+                                    currentRating={projectRatings[project.id]}
+                                    onRatingChange={(newRating) => {
+                                      setProjectRatings(prev => ({
+                                        ...prev,
+                                        [project.id]: newRating
+                                      }));
+                                    }}
+                                  />
+                                </div>
                               </div>
                             </div>
                           );

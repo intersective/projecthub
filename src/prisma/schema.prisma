@@ -69,21 +69,22 @@ model AuthSession {
 }
 
 model User {
-  id              String        @id @default(cuid())
-  email           String        @unique
+  id              String          @id @default(cuid())
+  email           String          @unique
   name            String?
   image           String?
   lastLoginAt     DateTime?
-  isActive        Boolean       @default(true)
-  isSuspended     Boolean       @default(false)
+  isActive        Boolean         @default(true)
+  isSuspended     Boolean         @default(false)
   suspendedAt     DateTime?
   suspendedReason String?
-  preferences     Json?         @default("{}")
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  preferences     Json?           @default("{}")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
   emailVerified   Boolean?
   accounts        Account[]
-  sessions        AuthSession[] @relation("BetterAuthSessions")
+  sessions        AuthSession[]   @relation("BetterAuthSessions")
+  projectRatings  ProjectRating[]
 
   @@map("user")
 }
@@ -181,6 +182,7 @@ model Project {
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
   applications   ProjectApplication[]
+  ratings        ProjectRating[]
 
   @@map("project")
 }
@@ -207,21 +209,22 @@ model ProjectApplication {
 }
 
 model Campaign {
-  id                  String    @id @default(cuid())
+  id                  String          @id @default(cuid())
   name                String
   description         String
   learningObjectives  String[]
   startDate           DateTime
   endDate             DateTime?
   maxParticipants     Int?
-  participantIds      String[]  @default([])
-  industryConstraints Json      @default("{}")
-  projectConstraints  Json      @default("{}")
-  landingPageConfig   Json      @default("{}")
-  status              String    @default("draft")
+  participantIds      String[]        @default([])
+  industryConstraints Json            @default("{}")
+  projectConstraints  Json            @default("{}")
+  landingPageConfig   Json            @default("{}")
+  status              String          @default("draft")
   contactEmail        String
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  projectRatings      ProjectRating[]
 
   @@map("campaign")
 }
@@ -437,4 +440,24 @@ model Tag {
   @@index([isActive])
   @@index([name])
   @@map("tag")
+}
+
+model ProjectRating {
+  id         String    @id @default(cuid())
+  userId     String
+  projectId  String
+  rating     Int // 1-5, where 1 is most preferred
+  campaignId String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project    Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  campaign   Campaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId, campaignId])
+  @@index([userId])
+  @@index([projectId])
+  @@index([campaignId])
+  @@index([rating])
+  @@map("project_rating")
 }

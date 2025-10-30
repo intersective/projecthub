@@ -1,0 +1,53 @@
+concept ProjectRating
+
+purpose "Track learner preferences for projects with ratings from 1-5"
+
+state ProjectRating {
+  id: String
+  userId: String
+  projectId: String
+  rating: Integer // 1-5, where 1 is most preferred
+  campaignId: String? // Optional campaign context
+  createdAt: Date
+  updatedAt: Date
+}
+
+state RatingAnalytics {
+  projectId: String
+  projectTitle: String
+  averageRating: Number
+  totalRatings: Integer
+  ratingDistribution: Map<Integer, Integer> // rating -> count
+  topRatedBy: Integer // Number of users who rated this as #1
+}
+
+actions
+  // Create or update a rating
+  setRating(userId: String, projectId: String, rating: Integer, campaignId?: String): 
+    ProjectRating | Error
+  
+  // Remove a rating
+  removeRating(userId: String, projectId: String, campaignId?: String): 
+    {} | Error
+  
+  // Bulk update ratings for a user (reorder preferences)
+  updateUserRatings(userId: String, ratings: Array<{projectId: String, rating: Integer}>, campaignId?: String):
+    Array<ProjectRating> | Error
+
+queries
+  // Get all ratings for a user
+  _getUserRatings(userId: String, campaignId?: String): Array<ProjectRating>
+  
+  // Get all ratings for a project
+  _getProjectRatings(projectId: String, campaignId?: String): Array<ProjectRating>
+  
+  // Get analytics for admin dashboard
+  _getProjectAnalytics(campaignId?: String, limit?: Integer): Array<RatingAnalytics>
+  
+  // Get top preferred projects across all learners
+  _getTopPreferredProjects(campaignId?: String, topN?: Integer): Array<RatingAnalytics>
+
+invariants
+  - rating must be between 1 and 5
+  - user can have only one rating per project per campaign
+  - rating of 1 means most preferred, 5 means least preferred
