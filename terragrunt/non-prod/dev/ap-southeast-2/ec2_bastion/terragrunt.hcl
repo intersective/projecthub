@@ -1,5 +1,5 @@
 terraform {
-  source = "git::ssh://git@github.com/intersective/devops-infrastructure-common.git//modules/aws_ec2_bastion/?ref=v0.0.1"
+  source = "git::https://github.com/intersective/devops-infrastructure-common.git//modules/aws_ec2_bastion/?ref=v0.0.1"
 }
 
 include "root" {
