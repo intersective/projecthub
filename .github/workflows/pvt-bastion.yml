@@ -33,7 +33,7 @@ jobs:
       ENDPOINT: projecthub.p2-sandbox.practera.com
       ACM_NAME: cdn.p2-sandbox.practera.com
       DB_HOST: db.internal.p2-sandbox.practera.com
-      GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,7 +43,10 @@ jobs:
         with:
           tg_version: 0.77.22
           tofu_version: 1.6.0
-          github_token: ${{ secrets.GH_TOKEN }}
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ env.SSH_PRIVATE_KEY }}
       - name: Get AWS Organization Number
         id: AWS_ORG
         run: |
