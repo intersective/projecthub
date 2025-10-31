@@ -12,9 +12,6 @@ on:
           - "deploy"
           - "destroy"
         default: "deploy"
-  push:
-    branches:
-      - feat/terragrunt
 
 jobs:
   deploy:
