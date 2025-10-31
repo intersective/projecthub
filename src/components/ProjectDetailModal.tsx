@@ -305,7 +305,7 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onUpdated
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {project.deliverables.map((deliverable, index) => (
                         <div key={index} className="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
-                          <span className="text-gray-300">{deliverable}</span>
+                          <span className="text-gray-300 break-words overflow-wrap-anywhere">{deliverable}</span>
                         </div>
                       ))}
                     </div>
@@ -412,17 +412,17 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onUpdated
           <div className="sticky bottom-0 bg-gray-900/95 backdrop-blur-sm border-t border-gray-700 p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <button className="p-2 text-gray-400 hover:text-white transition-colors">
+                <button className="p-2 text-gray-400 hover:text-white transition-colors heart-shape">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                   </svg>
                 </button>
-                <button className="p-2 text-gray-400 hover:text-white transition-colors">
+                <button className="p-2 text-gray-400 hover:text-white transition-colors share">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
                   </svg>
                 </button>
-                <button className="p-2 text-gray-400 hover:text-white transition-colors">
+                <button className="p-2 text-gray-400 hover:text-white transition-colors download">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>

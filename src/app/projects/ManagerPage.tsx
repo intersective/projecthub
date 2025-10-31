@@ -155,6 +155,10 @@ function ManagerProjectsPage() {
 
   const handleCreateProject = async () => {
     try {
+      // Debug: Log the formData before sending
+      console.log('Creating project with formData:', formData);
+      console.log('Deliverables array:', formData.deliverables);
+      
       const response = await fetch('/api/projects', {
         method: 'POST',
         headers: {
@@ -279,15 +283,22 @@ function ManagerProjectsPage() {
 
   const handleArrayFieldChange = (field: keyof ProjectFormData, value: string, action: 'add' | 'remove') => {
     const currentArray = formData[field] as string[];
+    console.log(`handleArrayFieldChange - field: ${field}, value: ${value}, action: ${action}`);
+    console.log('Current array before change:', currentArray);
+    
     if (action === 'add' && value.trim() && !currentArray.includes(value.trim())) {
+      const newArray = [...currentArray, value.trim()];
+      console.log('New array after add:', newArray);
       setFormData({
         ...formData,
-        [field]: [...currentArray, value.trim()]
+        [field]: newArray
       });
     } else if (action === 'remove') {
+      const newArray = currentArray.filter(item => item !== value);
+      console.log('New array after remove:', newArray);
       setFormData({
         ...formData,
-        [field]: currentArray.filter(item => item !== value)
+        [field]: newArray
       });
     }
   };
@@ -820,71 +831,111 @@ function ManagerProjectsPage() {
               {/* Deliverables */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Deliverables
+                  Deliverables (Current count: {formData.deliverables.length})
                 </label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {formData.deliverables.map((deliverable, index) => (
-                    <span
+                    <button
                       key={index}
-                      className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm flex items-center gap-2 dark:bg-green-900 dark:text-green-200"
+                      type="button"
+                      onClick={() => handleArrayFieldChange('deliverables', deliverable, 'remove')}
+                      className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm flex items-center gap-2 dark:bg-green-900 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800 transition-colors cursor-pointer"
+                      title="Click to remove"
                     >
                       {deliverable}
-                      <button
-                        onClick={() => handleArrayFieldChange('deliverables', deliverable, 'remove')}
-                        className="text-green-600 hover:text-green-800 dark:text-green-300 dark:hover:text-green-100"
-                      >
+                      <span className="text-green-600 dark:text-green-300">
                         ×
-                      </button>
-                    </span>
+                      </span>
+                    </button>
                   ))}
                 </div>
-                <input
-                  type="text"
-                  placeholder="Type a deliverable and press Enter"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleArrayFieldChange('deliverables', e.currentTarget.value, 'add');
-                      e.currentTarget.value = '';
-                    }
-                  }}
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    id="deliverable-input"
+                    placeholder="Type a deliverable and press Enter"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const value = e.currentTarget.value;
+                        console.log('Enter pressed, value:', value);
+                        if (value.trim()) {
+                          handleArrayFieldChange('deliverables', value, 'add');
+                          e.currentTarget.value = '';
+                        }
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const input = document.getElementById('deliverable-input') as HTMLInputElement;
+                      if (input && input.value.trim()) {
+                        handleArrayFieldChange('deliverables', input.value, 'add');
+                        input.value = '';
+                      }
+                    }}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
+                  >
+                    Add
+                  </button>
+                </div>
               </div>
 
               {/* Learning Objectives */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Learning Objectives
+                  Learning Objectives (Current count: {formData.learningObjectives?.length || 0})
                 </label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {formData.learningObjectives?.map((objective, index) => (
-                    <span
+                    <button
                       key={index}
-                      className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm flex items-center gap-2 dark:bg-purple-900 dark:text-purple-200"
+                      type="button"
+                      onClick={() => handleArrayFieldChange('learningObjectives', objective, 'remove')}
+                      className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm flex items-center gap-2 dark:bg-purple-900 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors cursor-pointer"
+                      title="Click to remove"
                     >
                       {objective}
-                      <button
-                        onClick={() => handleArrayFieldChange('learningObjectives', objective, 'remove')}
-                        className="text-purple-600 hover:text-purple-800 dark:text-purple-300 dark:hover:text-purple-100"
-                      >
+                      <span className="text-purple-600 dark:text-purple-300">
                         ×
-                      </button>
-                    </span>
+                      </span>
+                    </button>
                   ))}
                 </div>
-                <input
-                  type="text"
-                  placeholder="Type a learning objective and press Enter"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleArrayFieldChange('learningObjectives', e.currentTarget.value, 'add');
-                      e.currentTarget.value = '';
-                    }
-                  }}
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    id="learning-objective-input"
+                    placeholder="Type a learning objective and press Enter"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const value = e.currentTarget.value;
+                        console.log('Enter pressed for learning objective, value:', value);
+                        if (value.trim()) {
+                          handleArrayFieldChange('learningObjectives', value, 'add');
+                          e.currentTarget.value = '';
+                        }
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const input = document.getElementById('learning-objective-input') as HTMLInputElement;
+                      if (input && input.value.trim()) {
+                        handleArrayFieldChange('learningObjectives', input.value, 'add');
+                        input.value = '';
+                      }
+                    }}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg"
+                  >
+                    Add
+                  </button>
+                </div>
               </div>
 
               {/* Tags */}
