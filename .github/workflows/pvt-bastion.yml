@@ -33,13 +33,14 @@ jobs:
       ENDPOINT: projecthub.p2-sandbox.practera.com
       ACM_NAME: cdn.p2-sandbox.practera.com
       DB_HOST: db.internal.p2-sandbox.practera.com
-      CI: true
+      GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - run: ls -la
-      - name: Install Terragrunt
+      - run: |
+          ls -la
+      - name: Install Terragrunt and OpenTofu
         uses: gruntwork-io/terragrunt-action@v3
         with:
           tg_version: 0.77.22
@@ -60,7 +61,7 @@ jobs:
       #     terraform init
       - name: .env create
         run: |
-          cat >> .env <<EOF
+          cat >> files/.env <<EOF
           OPENAI_API_KEY=$OPENAI_API_KEY
           EMAIL_USER=$EMAIL_USER
           EMAIL_PASS=$EMAIL_PASS
@@ -91,11 +92,16 @@ jobs:
           HOST=$DB_HOST
           POST=5432
 
-          cat >> .pgpass <<EOF
+          cat >> files/.pgpass <<EOF
           $HOST:$POST:*:$USERNAME:$PASSWORD
           EOF
       - run: |
-          terragrunt --version
+          ls -la files/
+          cat files/.env
+          cat files/.pgpass
+      - name: terragrunt plan
+        run: |
+          terragrunt plan
       # - name: terraform apply
       #   if: ${{ github.event.inputs.action == 'deploy' }}
       #   run: |
