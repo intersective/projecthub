@@ -108,6 +108,11 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const projectConcept = new ProjectConcept();
         
+        // Debug: Log what we're receiving
+        console.log('POST /api/projects - Received body:', body);
+        console.log('Deliverables received:', body.deliverables);
+        console.log('Deliverables type:', typeof body.deliverables, Array.isArray(body.deliverables));
+        
         // Generate image URL if not provided
         const seed = `${body.industry}-${body.domain}`.replace(/\s+/g, '-').toLowerCase();
         const finalImageUrl = body.image || `https://picsum.photos/seed/${seed}/600/340`;
