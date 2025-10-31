@@ -4,6 +4,8 @@ export { makeApiTeamSyncs } from './common/api-teams';
 export { makeApiCampaignSyncs } from './project/api-campaigns';
 export { makeApiProjectSyncs } from './project/api-projects';
 export { makeProjectExtractionSyncs } from './project/project-extraction';
+export { makeProjectPreferenceSyncs } from './project/project-preference.sync';
+export { makeIndustryPreferenceSyncs } from './common/industry-preference';
 //export { makeApiSkillSyncs } from './wip/api-skills';
 export { makeApiRelationshipSyncs } from './common/api-relationships';
 export { makeApiUserSyncs } from './common/api-users';

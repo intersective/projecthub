@@ -1,0 +1,30 @@
+sync ProjectPreference
+
+purpose: Coordinate project preference management through API
+
+concepts: API, ProjectPreference
+
+// Set user preferences
+SetPreferences:
+  when: API.request [method="POST", path="/api/project-preferences"]
+  then: ProjectPreference.setPreferences [userId=request.headers.x-user-id, preferences=request.body.preferences]
+
+// Get user preferences
+GetPreferences:
+  when: API.request [method="GET", path="/api/project-preferences"]
+  then: ProjectPreference.getUserPreferences [userId=request.headers.x-user-id]
+
+// Remove a preference
+RemovePreference:
+  when: API.request [method="DELETE", path="/api/project-preferences/:projectId"]
+  then: ProjectPreference.removePreference [userId=request.headers.x-user-id, projectId=request.params.projectId]
+
+// Clear all preferences
+ClearPreferences:
+  when: API.request [method="DELETE", path="/api/project-preferences"]
+  then: ProjectPreference.clearUserPreferences [userId=request.headers.x-user-id]
+
+// Get project stats
+GetProjectStats:
+  when: API.request [method="GET", path="/api/project-preferences/stats/:projectId"]
+  then: ProjectPreference.getProjectPreferenceStats [projectId=request.params.projectId]

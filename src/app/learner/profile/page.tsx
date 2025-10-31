@@ -13,6 +13,7 @@ interface UserProfile {
   bio?: string;
   linkedinUrl?: string; // Maps to profile.linkedinUrl in database
   website?: string; // Maps to profile.website in database
+  industryPreferences?: string[]; // Industry preferences
 }
 
 export default function LearnerProfilePage() {
@@ -22,10 +23,29 @@ export default function LearnerProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editedProfile, setEditedProfile] = useState<Partial<UserProfile>>({});
+  const [availableIndustries, setAvailableIndustries] = useState<string[]>([]);
+  const [industrySearchTerm, setIndustrySearchTerm] = useState('');
+  const [loadingIndustries, setLoadingIndustries] = useState(false);
 
   useEffect(() => {
     fetchProfile();
+    fetchAvailableIndustries();
   }, []);
+
+  const fetchAvailableIndustries = async () => {
+    setLoadingIndustries(true);
+    try {
+      const res = await fetch('/api/industries');
+      if (res.ok) {
+        const data = await res.json();
+        setAvailableIndustries(data.industries || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch industries:', error);
+    } finally {
+      setLoadingIndustries(false);
+    }
+  };
 
   const fetchProfile = async () => {
     try {
@@ -263,6 +283,125 @@ export default function LearnerProfilePage() {
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Industry Preferences Section */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              Industry Preferences
+            </h2>
+            
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Select industries you're interested in. Projects from these industries will be highlighted and prioritized for you.
+            </p>
+
+            {editing ? (
+              <div className="space-y-4">
+                {/* Search Input */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search industries..."
+                    value={industrySearchTerm}
+                    onChange={(e) => setIndustrySearchTerm(e.target.value)}
+                    className="w-full px-4 py-2 pl-10 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
+                  />
+                  <svg className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+
+                {/* Industry Selection Grid */}
+                {loadingIndustries ? (
+                  <div className="flex justify-center py-8">
+                    <div className="w-8 h-8 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 dark:border-t-blue-400 rounded-full animate-spin"></div>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2 max-h-60 overflow-y-auto p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    {availableIndustries
+                      .filter(industry => 
+                        industry.toLowerCase().includes(industrySearchTerm.toLowerCase())
+                      )
+                      .map(industry => {
+                        const isSelected = editedProfile.industryPreferences?.includes(industry);
+                        return (
+                          <button
+                            key={industry}
+                            type="button"
+                            onClick={() => {
+                              const current = editedProfile.industryPreferences || [];
+                              if (isSelected) {
+                                setEditedProfile({
+                                  ...editedProfile,
+                                  industryPreferences: current.filter(i => i !== industry)
+                                });
+                              } else {
+                                setEditedProfile({
+                                  ...editedProfile,
+                                  industryPreferences: [...current, industry]
+                                });
+                              }
+                            }}
+                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all transform hover:scale-105 ${
+                              isSelected
+                                ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md'
+                                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
+                            }`}
+                          >
+                            {industry}
+                            {isSelected && (
+                              <span className="ml-1">✓</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    {availableIndustries.filter(industry => 
+                      industry.toLowerCase().includes(industrySearchTerm.toLowerCase())
+                    ).length === 0 && (
+                      <p className="text-gray-500 dark:text-gray-400 py-4 w-full text-center">
+                        No industries found matching "{industrySearchTerm}"
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Selection Counter */}
+                {editedProfile.industryPreferences && editedProfile.industryPreferences.length > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">
+                      Selected: {editedProfile.industryPreferences.length} {editedProfile.industryPreferences.length === 1 ? 'industry' : 'industries'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setEditedProfile({ ...editedProfile, industryPreferences: [] })}
+                      className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                    >
+                      Clear all
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {profile?.industryPreferences && profile.industryPreferences.length > 0 ? (
+                  profile.industryPreferences.map(industry => (
+                    <span
+                      key={industry}
+                      className="px-3 py-1.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium"
+                    >
+                      {industry}
+                    </span>
+                  ))
+                ) : (
+                  <p className="text-gray-500 dark:text-gray-400 italic">
+                    No industries selected. Edit your profile to add industry preferences.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

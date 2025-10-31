@@ -1,0 +1,15 @@
+sync IndustryPreference {
+  // Sync industry preferences with profile updates
+  UpdateProfileWithPreferences:
+    when: API.request(method: "PUT", path: "/api/profile")
+    where: request.body.industryPreferences exists
+    then: IndustryPreference.setPreferences(
+      userId: request.headers['x-user-id'],
+      industries: request.body.industryPreferences
+    )
+
+  // Get user preferences with profile
+  GetProfileWithPreferences:
+    when: Profile._getByUserId(userId)
+    then: IndustryPreference._getByUserId(userId)
+}
