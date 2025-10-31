@@ -38,8 +38,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - run: |
-          ls -la
       - name: Install Terragrunt and OpenTofu
         uses: gruntwork-io/terragrunt-action@v3
         with:
@@ -56,9 +54,6 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::${{ steps.AWS_ORG.outputs.P2SANDBOX }}:role/github-restricted-role-to-assume
           region: ${{ env.REGION }}
-      # - name: terraform init
-      #   run: |
-      #     terraform init
       - name: .env create
         run: |
           cat >> files/.env <<EOF
@@ -95,18 +90,6 @@ jobs:
           cat >> files/.pgpass <<EOF
           $HOST:$POST:*:$USERNAME:$PASSWORD
           EOF
-      - run: |
-          ls -la files/
-          cat files/.env
-          cat files/.pgpass
       - name: terragrunt plan
         run: |
           terragrunt plan
-      # - name: terraform apply
-      #   if: ${{ github.event.inputs.action == 'deploy' }}
-      #   run: |
-      #     terraform apply -var-file=default.tfvars -auto-approve
-      # - name: terraform destroy
-      #   if: ${{ github.event.inputs.action == 'destroy' }}
-      #   run: |
-      #     terraform destroy -var-file=default.tfvars -auto-approve
