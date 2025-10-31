@@ -10,7 +10,6 @@ project-brief-generator/
 **DS_Store
 src/project-brief-generator/*
 .terraform/
-.terraform.lock.hcl
 *.tfstate
 *.tfstate.backup
 .terraformrc
@@ -20,3 +19,10 @@ src/next-env.d.ts
 # Local uploads (development only)
 src/public/uploads/
 src/tsconfig.tsbuildinfo
+
+
+# terragrunt
+.terragrunt-cache/
+
+# pg
+.pgpass

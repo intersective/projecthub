@@ -1,5 +1,5 @@
 ---
-name: Deploy bastion to p2-sandbox
+name: Deploy/Destroy bastion to p2-sandbox
 
 on:
   workflow_dispatch:
@@ -12,6 +12,9 @@ on:
           - "deploy"
           - "destroy"
         default: "deploy"
+  push:
+    branches:
+      - feat/terragrunt
 
 jobs:
   deploy:
@@ -20,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: terraform/bastion/dev
+        working-directory: terragrunt/non-prod/dev/ap-southeast-2/ec2_bastion
     env:
       REGION: ap-southeast-2
       ENV: dev
@@ -30,15 +33,20 @@ jobs:
       ENDPOINT: projecthub.p2-sandbox.practera.com
       ACM_NAME: cdn.p2-sandbox.practera.com
       DB_HOST: db.internal.p2-sandbox.practera.com
-      CI: true
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
+      - name: Install Terragrunt and OpenTofu
+        uses: gruntwork-io/terragrunt-action@v3
         with:
-          terraform_version: "1.13.4"
+          tg_version: 0.77.22
+          tofu_version: 1.6.0
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ env.SSH_PRIVATE_KEY }}
       - name: Get AWS Organization Number
         id: AWS_ORG
         run: |
@@ -50,12 +58,9 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::${{ steps.AWS_ORG.outputs.P2SANDBOX }}:role/github-restricted-role-to-assume
           region: ${{ env.REGION }}
-      - name: terraform init
-        run: |
-          terraform init
       - name: .env create
         run: |
-          cat >> .env <<EOF
+          cat >> files/.env <<EOF
           OPENAI_API_KEY=$OPENAI_API_KEY
           EMAIL_USER=$EMAIL_USER
           EMAIL_PASS=$EMAIL_PASS
@@ -86,15 +91,17 @@ jobs:
           HOST=$DB_HOST
           POST=5432
 
-          cat >> .pgpass <<EOF
+          cat >> files/.pgpass <<EOF
           $HOST:$POST:*:$USERNAME:$PASSWORD
           EOF
-
-      - name: terraform apply
-        if: ${{ github.event.inputs.action == 'deploy' }}
+      - name: terragrunt plan
         run: |
-          terraform apply -var-file=default.tfvars -auto-approve
-      - name: terraform destroy
-        if: ${{ github.event.inputs.action == 'destroy' }}
+          terragrunt plan
+      
+      - name: terragrunt apply or destroy
         run: |
-          terraform destroy -var-file=default.tfvars -auto-approve
+          if [ "${{ github.event.inputs.action }}" == "deploy" ]; then
+            terragrunt apply -auto-approve
+          else
+            terragrunt destroy -auto-approve
+          fi
