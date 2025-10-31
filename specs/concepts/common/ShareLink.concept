@@ -1,0 +1,56 @@
+<concept_spec>
+
+concept ShareLink
+
+purpose
+  to generate trackable share links for projects with referral attribution
+
+state
+  a set of ShareLinks with
+    an id String
+    a projectId String
+    a userId String (who created the link)
+    a code String (unique shareable code)
+    a createdAt Date
+    an updatedAt Date
+    a clickCount Number
+    an lastClickedAt Date?
+
+actions
+  createOrGet(userId: String, projectId: String) -> ShareLink | {error}
+    - create a new share link or return existing one
+    - generate unique code if creating new
+    - one unique code per user-project combination
+    - return share link with code
+
+  trackClick(code: String, referrerId: String?) -> ShareLink | {error}
+    - increment click count for share link
+    - update lastClickedAt timestamp
+    - optionally track who clicked (referrerId)
+    - return updated share link
+
+  incrementClicks(code: String) -> ShareLink | {error}
+    - increment click count
+    - update lastClickedAt
+    - return updated share link
+
+queries
+  _getByCode(code: String) -> ShareLink?
+    - return share link by unique code
+
+  _getByUser(userId: String) -> [ShareLink]
+    - return all share links created by user
+
+  _getByProject(projectId: String) -> [ShareLink]
+    - return all share links for a project
+
+  _getByUserAndProject(userId: String, projectId: String) -> ShareLink?
+    - return share link for specific user-project combination
+
+  _getStats(userId: String) -> {totalLinks: Number, totalClicks: Number}
+    - return aggregated statistics for user's share links
+
+operational principle
+  Users can generate unique shareable links for projects. After createOrGet(userId: "user1", projectId: "proj123"), a unique code is generated. When someone clicks the link with that code, trackClick(code: "ABC123") increments the counter, allowing the creator to track engagement.
+
+</concept_spec>

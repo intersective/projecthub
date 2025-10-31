@@ -8,6 +8,8 @@ import { ProfileConcept } from "@/lib/concepts/common/profile";
 import { ProjectConcept } from "@/lib/concepts/project/project";
 import { ProjectPreferenceConcept } from "@/lib/concepts/project/project-preference";
 import { IndustryPreferenceConcept } from "@/lib/concepts/common/industry-preference";
+import { SavedProjectConcept } from "@/lib/concepts/project/saved-project";
+import { ShareLinkConcept } from "@/lib/concepts/common/share-link";
 //import { AssignmentConcept } from "@/lib/concepts/wip/assignment";
 import { UserConcept } from "@/lib/concepts/common/user";
 import { RoleConcept } from "@/lib/concepts/common/role";
@@ -35,7 +37,9 @@ import {
   makeAuthSyncs,
   makeProjectExtractionSyncs,
   makeProjectPreferenceSyncs,
-  makeIndustryPreferenceSyncs
+  makeIndustryPreferenceSyncs,
+  makeSavedProjectSyncs,
+  makeShareLinkSyncs
   // Temporarily excluding these syncs due to concept dependencies:
   // makeNotificationWorkflowSyncs,
   // makeContentManagementSyncs
@@ -79,6 +83,8 @@ const concepts = {
   Project: new ProjectConcept(),
   ProjectPreference: new ProjectPreferenceConcept(),
   IndustryPreference: new IndustryPreferenceConcept(),
+  SavedProject: new SavedProjectConcept(),
+  ShareLink: new ShareLinkConcept(),
   //Assignment: new AssignmentConcept(),
   User: new UserConcept(),
   Role: new RoleConcept(),
@@ -97,7 +103,7 @@ const concepts = {
 // Instrument for reactivity
 // Instrumentation wraps action methods so the engine can observe invocations,
 // assign flow tokens, and trigger synchronizations automatically.
-const { API, Organization, Campaign, Team, Profile, Project, ProjectPreference, IndustryPreference, User, Role, Membership, Session, Relationship, Auth } = Sync.instrument(concepts);
+const { API, Organization, Campaign, Team, Profile, Project, ProjectPreference, IndustryPreference, SavedProject, ShareLink, User, Role, Membership, Session, Relationship, Auth } = Sync.instrument(concepts);
 
 // Register synchronizations
 // Each `make*Syncs` returns a map of sync functions that connect concept actions
@@ -109,6 +115,8 @@ const campaignSyncs = makeApiCampaignSyncs(API, Campaign);
 const projectSyncs = makeApiProjectSyncs(API, Project, Relationship);
 const projectPreferenceSyncs = makeProjectPreferenceSyncs(API, ProjectPreference);
 const industryPreferenceSyncs = makeIndustryPreferenceSyncs(API, IndustryPreference, Profile);
+const savedProjectSyncs = makeSavedProjectSyncs(API, SavedProject);
+const shareLinkSyncs = makeShareLinkSyncs(API, ShareLink);
 //const skillSyncs = makeApiSkillSyncs(API, Skill);
 const relationshipSyncs = makeApiRelationshipSyncs(API, Relationship);
 const rbacSyncs = makeHierarchicalRBACsyncs(API, User, Role, Membership, Session, Organization, Campaign, Project, Team);
@@ -125,10 +133,12 @@ Sync.register({
   ...projectSyncs,
   ...projectPreferenceSyncs,
   ...industryPreferenceSyncs,
+  ...savedProjectSyncs,
+  ...shareLinkSyncs,
   ...projectExtractionSyncs,
   // ...relationshipSyncs,
   // ...rbacSyncs,
 });
 
 // Export for API routes and server actions
-export { API, Organization, Campaign, Team, Profile, Project, ProjectPreference, IndustryPreference, User, Role, Membership, Session, Relationship, Sync };
+export { API, Organization, Campaign, Team, Profile, Project, ProjectPreference, IndustryPreference, SavedProject, ShareLink, User, Role, Membership, Session, Relationship, Sync };

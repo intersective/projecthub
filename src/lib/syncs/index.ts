@@ -6,6 +6,8 @@ export { makeApiProjectSyncs } from './project/api-projects';
 export { makeProjectExtractionSyncs } from './project/project-extraction';
 export { makeProjectPreferenceSyncs } from './project/project-preference.sync';
 export { makeIndustryPreferenceSyncs } from './common/industry-preference';
+export { makeSavedProjectSyncs } from './project/saved-project.sync';
+export { makeShareLinkSyncs } from './common/share-link.sync';
 //export { makeApiSkillSyncs } from './wip/api-skills';
 export { makeApiRelationshipSyncs } from './common/api-relationships';
 export { makeApiUserSyncs } from './common/api-users';

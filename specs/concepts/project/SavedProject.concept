@@ -1,0 +1,52 @@
+<concept_spec>
+
+concept SavedProject
+
+purpose
+  to allow learners to bookmark/save projects for later viewing
+
+state
+  a set of SavedProjects with
+    an id String
+    a userId String
+    a projectId String
+    optional notes String
+    a createdAt Date
+    an updatedAt Date
+
+actions
+  save(userId: String, projectId: String, notes: String?) -> SavedProject | {error}
+    - create a new saved project bookmark
+    - validate userId and projectId exist
+    - prevent duplicate saves (same user + project)
+    - return saved project with timestamp
+
+  unsave(userId: String, projectId: String) -> {success: Boolean} | {error}
+    - remove a saved project bookmark
+    - return success status
+
+  updateNotes(userId: String, projectId: String, notes: String) -> SavedProject | {error}
+    - update notes for a saved project
+    - return updated saved project
+
+queries
+  _getByUser(userId: String) -> [SavedProject]
+    - return all projects saved by a user
+    - ordered by most recently saved
+
+  _getByProject(projectId: String) -> [SavedProject]
+    - return all users who saved this project
+
+  _isSaved(userId: String, projectId: String) -> Boolean
+    - check if user has saved a specific project
+
+  _getCountByUser(userId: String) -> Number
+    - return count of projects saved by user
+
+  _getCountByProject(projectId: String) -> Number
+    - return count of users who saved this project
+
+operational principle
+  Learners can bookmark projects they're interested in for later viewing. After save(userId: "learner1", projectId: "proj123"), then _isSaved(userId: "learner1", projectId: "proj123") returns true, and _getByUser(userId: "learner1") includes this project.
+
+</concept_spec>

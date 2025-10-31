@@ -468,3 +468,34 @@ model IndustryPreference {
   @@index([userId])
   @@map("industry_preferences")
 }
+
+model SavedProject {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, projectId])
+  @@index([userId])
+  @@index([projectId])
+  @@map("saved_project")
+}
+
+model ShareLink {
+  id            String    @id @default(cuid())
+  projectId     String
+  userId        String
+  code          String    @unique
+  clickCount    Int       @default(0)
+  lastClickedAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, projectId])
+  @@index([code])
+  @@index([userId])
+  @@index([projectId])
+  @@map("share_link")
+}

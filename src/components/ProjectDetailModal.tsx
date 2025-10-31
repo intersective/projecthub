@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Project } from '@/types/project';
+import { generateProjectPDF } from '@/lib/pdf-generator';
 
 interface ProjectDetailModalProps {
   project: Project | null;
@@ -34,16 +35,23 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onUpdated
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<Partial<Project>>({});
+  const [isSaved, setIsSaved] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
+  const [showShareToast, setShowShareToast] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
       setImageLoaded(false);
+      // Check if project is saved when modal opens
+      if (project) {
+        checkSavedStatus();
+      }
     } else {
       document.body.style.overflow = 'unset';
     }
     return () => { document.body.style.overflow = 'unset'; };
-  }, [isOpen]);
+  }, [isOpen, project]);
 
   if (!isOpen || !project) return null;
 
@@ -96,6 +104,85 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onUpdated
       alert('Failed to update project');
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Check if project is bookmarked/saved
+  const checkSavedStatus = async () => {
+    try {
+      const response = await fetch(`/api/saved-projects/check?projectId=${project.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setIsSaved(data.isSaved);
+      }
+    } catch (error) {
+      console.error('Failed to check saved status:', error);
+    }
+  };
+
+  // Toggle bookmark/save project
+  const toggleSave = async () => {
+    try {
+      if (isSaved) {
+        // Unsave
+        const response = await fetch('/api/saved-projects', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ projectId: project.id })
+        });
+        if (response.ok) {
+          setIsSaved(false);
+        }
+      } else {
+        // Save
+        const response = await fetch('/api/saved-projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ projectId: project.id })
+        });
+        if (response.ok) {
+          setIsSaved(true);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to toggle save:', error);
+      alert('Failed to save project');
+    }
+  };
+
+  // Generate and copy share link
+  const handleShare = async () => {
+    try {
+      const response = await fetch('/api/share-links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: project.id })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setShareUrl(data.shareUrl);
+        
+        // Copy to clipboard
+        await navigator.clipboard.writeText(data.shareUrl);
+        
+        // Show toast notification
+        setShowShareToast(true);
+        setTimeout(() => setShowShareToast(false), 3000);
+      }
+    } catch (error) {
+      console.error('Failed to generate share link:', error);
+      alert('Failed to generate share link');
+    }
+  };
+
+  // Download project as PDF
+  const handleDownload = () => {
+    try {
+      generateProjectPDF(project);
+    } catch (error) {
+      console.error('Failed to generate PDF:', error);
+      alert('Failed to download PDF');
     }
   };
 
@@ -410,19 +497,45 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onUpdated
 
           {/* Bottom Action Bar */}
           <div className="sticky bottom-0 bg-gray-900/95 backdrop-blur-sm border-t border-gray-700 p-6">
+            {/* Share Toast Notification */}
+            {showShareToast && (
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-4 py-2 bg-green-600 text-white rounded-lg shadow-lg flex items-center gap-2">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                Share link copied to clipboard!
+              </div>
+            )}
+            
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <button className="p-2 text-gray-400 hover:text-white transition-colors heart-shape">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button 
+                  onClick={toggleSave}
+                  className={`p-2 transition-colors heart-shape ${
+                    isSaved 
+                      ? 'text-red-500 hover:text-red-400' 
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                  title={isSaved ? 'Remove from saved' : 'Save for later'}
+                >
+                  <svg className="w-6 h-6" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                   </svg>
                 </button>
-                <button className="p-2 text-gray-400 hover:text-white transition-colors share">
+                <button 
+                  onClick={handleShare}
+                  className="p-2 text-gray-400 hover:text-white transition-colors share"
+                  title="Share project"
+                >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
                   </svg>
                 </button>
-                <button className="p-2 text-gray-400 hover:text-white transition-colors download">
+                <button 
+                  onClick={handleDownload}
+                  className="p-2 text-gray-400 hover:text-white transition-colors download"
+                  title="Download as PDF"
+                >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
