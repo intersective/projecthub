@@ -38,12 +38,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.13.4"
+      - run: ls -la
       - name: Install Terragrunt
         uses: gruntwork-io/terragrunt-action@v3
+        with:
+          tg_version: 0.77.22
+          tofu_version: 1.6.0
       - name: Get AWS Organization Number
         id: AWS_ORG
         run: |
@@ -96,7 +96,6 @@ jobs:
           EOF
       - run: |
           terragrunt --version
-          terraform --version
       # - name: terraform apply
       #   if: ${{ github.event.inputs.action == 'deploy' }}
       #   run: |
