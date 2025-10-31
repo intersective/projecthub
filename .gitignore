@@ -23,3 +23,6 @@ src/tsconfig.tsbuildinfo
 
 # terragrunt
 .terragrunt-cache/
+
+# pg
+.pgpass

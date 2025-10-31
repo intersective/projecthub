@@ -97,3 +97,11 @@ jobs:
       - name: terragrunt plan
         run: |
           terragrunt plan
+      
+      - name: terragrunt apply or destroy
+        run: |
+          if [ "${{ github.event.inputs.action }}" == "deploy" ]; then
+            terragrunt apply -auto-approve
+          else
+            terragrunt destroy -auto-approve
+          fi
