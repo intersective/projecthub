@@ -1,5 +1,5 @@
 terraform {
-  source = "git::ssh://git@github.com/intersective/devops-infrastructure-common.git//modules/aws_ec2_bastion/?ref=v0.0.1"
+  source = "git::ssh://git@github.com/intersective/devops-infrastructure-common.git//modules/aws_ec2_bastion/?ref=v0.0.12"
 }
 
 include "root" {
@@ -29,13 +29,29 @@ inputs = {
   aws_region                  = local.region_vars.locals.aws_region
   stack_name                  = local.account_vars.locals.stack_name
   tags                        = local.tags_vars.locals.common_tags
+  user_data_script            = local.user_data_final
   ami_name                    = "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"
   ami_owners                  = "099720109477"
-  instance_type               = "t2.micro"
-  user_data_script            = local.user_data_final
   vpc_name                    = "${local.account_vars.locals.stack_name}-vpc-${local.account_vars.locals.environment}"
   public_subnet_name_wildcard = "*public*"
   db_server_sg_name           = "${local.account_vars.locals.stack_name}-DBServerSecurityGroup-${local.account_vars.locals.environment}"
-  bastion_sg_name             = "${local.account_vars.locals.stack_name}-ProjectHubBastion-${local.account_vars.locals.environment}"
-  sg_inbound_ports            = [5432]
+  bastion_sg_name             = "${local.account_vars.locals.stack_name}-projecthub-bastion-${local.account_vars.locals.environment}"
+  instance_type               = "t2.micro"
+  ingress_rules = [
+    {
+      from_port   = 22
+      to_port     = 22
+      protocol    = "tcp"
+      description = "SSH from anywhere"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+  ]
+  egress_rules = [
+    {
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+  ]
 }
