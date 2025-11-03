@@ -68,63 +68,13 @@ export function makeSavedProjectSyncs(
     ])
   });
 
-  /**
-   * Get saved projects for user
-   */
-  const GetSavedProjects = ({ request, userId }: Vars) => ({
-    when: actions([
-      API.request as any,
-      { method: 'GET', path: '/api/saved-projects' },
-      { request }
-    ]),
-    then: actions([
-      SavedProject._getByUser,
-      {
-        userId: (frames: Frames) => {
-          for (const frame of frames) {
-            return (frame as any).headers?.['x-user-id'];
-          }
-          return '';
-        }
-      }
-    ])
-  });
-
-  /**
-   * Check if project is saved
-   */
-  const CheckSavedStatus = ({ request, userId, projectId }: Vars) => ({
-    when: actions([
-      API.request as any,
-      { method: 'GET', path: '/api/saved-projects/check' },
-      { request }
-    ]),
-    then: actions([
-      SavedProject._isSaved,
-      {
-        userId: (frames: Frames) => {
-          for (const frame of frames) {
-            return (frame as any).headers?.['x-user-id'];
-          }
-          return '';
-        },
-        projectId: (frames: Frames) => {
-          for (const frame of frames) {
-            const url = (frame as any).url;
-            if (!url) return '';
-            const params = new URLSearchParams(url.split('?')[1]);
-            return params.get('projectId') || '';
-          }
-          return '';
-        }
-      }
-    ])
-  });
+  // NOTE: Query actions (_getByUser, _isSaved) cannot be used in syncs
+  // because they are bound but not instrumented. They should be called
+  // directly from the API routes instead.
+  // See: src/lib/engine/sync.ts instrumentConcept() method
 
   return {
     SaveProjectBookmark,
-    UnsaveProjectBookmark,
-    GetSavedProjects,
-    CheckSavedStatus
+    UnsaveProjectBookmark
   };
 }

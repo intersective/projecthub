@@ -62,34 +62,13 @@ export function makeShareLinkSyncs(
     ])
   });
 
-  /**
-   * Get share link by code
-   */
-  const GetShareLinkByCode = ({ request, code }: Vars) => ({
-    when: actions([
-      API.request as any,
-      { method: 'GET', path: '/api/share-links/by-code' },
-      { request }
-    ]),
-    then: actions([
-      ShareLink._getByCode,
-      {
-        code: (frames: Frames) => {
-          for (const frame of frames) {
-            const url = (frame as any).url;
-            if (!url) return '';
-            const params = new URLSearchParams(url.split('?')[1]);
-            return params.get('code') || '';
-          }
-          return '';
-        }
-      }
-    ])
-  });
+  // NOTE: Query actions (_getByCode, _getByUser, etc.) cannot be used in syncs
+  // because they are bound but not instrumented. They should be called
+  // directly from the API routes instead.
+  // See: src/lib/engine/sync.ts instrumentConcept() method
 
   return {
     CreateShareLink,
-    TrackShareClick,
-    GetShareLinkByCode
+    TrackShareClick
   };
 }
