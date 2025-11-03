@@ -84,6 +84,9 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - name: Generate Prisma Client
+        run: |
+          cd src && npx prisma generate
       - name: sst install
         run: |
           cd src && npm run init
