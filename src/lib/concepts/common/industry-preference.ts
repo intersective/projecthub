@@ -14,7 +14,7 @@ export class IndustryPreferenceConcept {
    */
   async setPreferences(input: {
     userId: string;
-    industries: string[];
+    industries?: string[];
   }): Promise<{ preferences: IndustryPreference[] } | { error: string }> {
     try {
       // Validate input
@@ -23,7 +23,15 @@ export class IndustryPreferenceConcept {
       }
 
       // Remove duplicates and empty strings
-      const uniqueIndustries = [...new Set(input.industries.filter(i => i.trim()))];
+      const industries = Array.isArray(input.industries) ? input.industries : [];
+      const uniqueIndustries = [
+        ...new Set(
+          industries
+            .filter((industry): industry is string => typeof industry === "string")
+            .map(industry => industry.trim())
+            .filter(industry => industry.length > 0)
+        )
+      ];
 
       // Transaction to ensure atomicity
       const result = await prisma.$transaction(async (tx) => {
