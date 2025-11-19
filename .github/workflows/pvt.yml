@@ -60,7 +60,7 @@ jobs:
           region: ${{ env.REGION }}
       - name: .env create
         run: |
-          cat >> src/.env <<EOF
+          cat >> src/env.txt <<EOF
           OPENAI_API_KEY=$OPENAI_API_KEY
           EMAIL_USER=$EMAIL_USER
           EMAIL_PASS=$EMAIL_PASS
@@ -84,12 +84,9 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      - name: Generate Prisma Client
-        run: |
-          cd src && npx prisma generate
-      - name: sst install
-        run: |
-          cd src && npm run init
-      - name: sst deploy
-        run: |
-          cd src && npm run deploy
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-artifact
+          path: src/env.txt
+          retention-days: 5
