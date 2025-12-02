@@ -49,7 +49,7 @@
     "llamaindex": "^0.11.26",
     "mammoth": "^1.10.0",
     "next": "^15.0.0",
-    "nodemailer": "^7.0.5",
+    "nodemailer": "^7.0.11",
     "openai": "^4.104.0",
     "path-to-regexp": "^8.2.0",
     "postcss": "^8.5.6",
