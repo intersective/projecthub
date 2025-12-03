@@ -48,7 +48,7 @@
     "commander": "^11.1.0",
     "llamaindex": "^0.11.26",
     "mammoth": "^1.10.0",
-    "next": "^15.0.0",
+    "next": "^15.5.7",
     "nodemailer": "^7.0.5",
     "openai": "^4.104.0",
     "path-to-regexp": "^8.2.0",
