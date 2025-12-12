@@ -16,6 +16,6 @@
     "@vercel/blob": "^1.1.1"
   },
   "devDependencies": {
-    "next": "^15.5.4"
+    "next": "^15.5.8"
   }
 }
