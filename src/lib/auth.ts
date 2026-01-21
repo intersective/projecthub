@@ -127,7 +127,11 @@ export const auth = betterAuth({
             });
 
             let currentRole = 'member';
-            if (orgMembership?.roleEntityId) {
+            // Prioritize campaign membership for learners
+            if (campaignMembership?.roleEntityId) {
+              const role = await prisma.role.findUnique({ where: { id: campaignMembership.roleEntityId } });
+              if (role?.displayName) currentRole = role.displayName.toLowerCase().replace(/\s+/g, '_');
+            } else if (orgMembership?.roleEntityId) {
               const role = await prisma.role.findUnique({ where: { id: orgMembership.roleEntityId } });
               if (role?.displayName) currentRole = role.displayName.toLowerCase().replace(/\s+/g, '_');
             }
@@ -310,6 +314,10 @@ export async function ensureSessionContext(userId: string, userEmail: string) {
     let currentRole = 'member';
     if (await isAdminUser(userEmail)) {
       currentRole = 'platform_admin';
+    } else if (campaignMembership?.roleEntityId) {
+      // Prioritize campaign membership for learners
+      const role = await prisma.role.findUnique({ where: { id: campaignMembership.roleEntityId } });
+      if (role?.displayName) currentRole = role.displayName.toLowerCase().replace(/\s+/g, '_');
     } else if (orgMembership?.roleEntityId) {
       const role = await prisma.role.findUnique({ where: { id: orgMembership.roleEntityId } });
       if (role?.displayName) currentRole = role.displayName.toLowerCase().replace(/\s+/g, '_');

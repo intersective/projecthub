@@ -16,8 +16,12 @@ export async function GET(request: NextRequest) {
     if (!session) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    // if no organizationId, return empty array instead of error
-    if (!session.currentContext?.organizationId) {
+    
+    // Check for either organization or campaign context
+    const organizationId = session.currentContext?.organizationId;
+    const campaignId = session.currentContext?.campaignId;
+    
+    if (!organizationId && !campaignId) {
         return NextResponse.json({
             projects: [],
             pagination: {
@@ -63,13 +67,21 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        // Get paginated projects
-        const result = await projectConcept._getByOrganizationPaginated({
-            organizationId: session.currentContext.organizationId,
-            skip,
-            take: limit,
-            filters: Object.keys(filters).length > 0 ? filters : undefined
-        });
+        // Use campaign-based query if user has campaign context (learners)
+        // Otherwise use organization-based query (managers/educators)
+        const result = campaignId
+            ? await projectConcept._getByCampaignPaginated({
+                campaignId,
+                skip,
+                take: limit,
+                filters: Object.keys(filters).length > 0 ? filters : undefined
+            })
+            : await projectConcept._getByOrganizationPaginated({
+                organizationId: organizationId!,
+                skip,
+                take: limit,
+                filters: Object.keys(filters).length > 0 ? filters : undefined
+            });
 
         return NextResponse.json({
             projects: result.projects,

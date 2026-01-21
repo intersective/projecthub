@@ -510,6 +510,100 @@ export class ProjectConcept {
     }
   }
 
+  async _getByCampaignPaginated(input: { 
+    campaignId: string;
+    skip?: number;
+    take?: number;
+    filters?: {
+      industry?: string;
+      domain?: string;
+      status?: string;
+      difficulty?: string;
+      estimatedHoursMin?: number;
+      estimatedHoursMax?: number;
+    };
+  }): Promise<{ projects: Project[]; total: number; hasMore: boolean }> {
+    try {
+      // Get project IDs that belong to the campaign via relationships
+      const relationships = await prisma.relationship.findMany({
+        where: {
+          fromEntityType: 'campaign',
+          fromEntityId: input.campaignId,
+          toEntityType: 'project',
+          relationType: 'contains',
+        }
+      });
+
+      const projectIds = relationships.map(r => r.toEntityId);
+
+      if (projectIds.length === 0) {
+        return { projects: [], total: 0, hasMore: false };
+      }
+
+      // Build filter conditions
+      const where: any = {
+        id: { in: projectIds },
+        status: 'active' // Only show active projects to learners
+      };
+
+      if (input.filters) {
+        if (input.filters.industry) {
+          where.industry = { contains: input.filters.industry, mode: 'insensitive' };
+        }
+        if (input.filters.domain) {
+          where.domain = { contains: input.filters.domain, mode: 'insensitive' };
+        }
+        if (input.filters.status) {
+          where.status = input.filters.status;
+        }
+        if (input.filters.difficulty) {
+          where.difficulty = input.filters.difficulty;
+        }
+        if (input.filters.estimatedHoursMin !== undefined || input.filters.estimatedHoursMax !== undefined) {
+          where.estimatedHours = {};
+          if (input.filters.estimatedHoursMin !== undefined) {
+            where.estimatedHours.gte = input.filters.estimatedHoursMin;
+          }
+          if (input.filters.estimatedHoursMax !== undefined) {
+            where.estimatedHours.lte = input.filters.estimatedHoursMax;
+          }
+        }
+      }
+
+      // Get total count
+      const total = await prisma.project.count({ where });
+
+      // Get paginated projects
+      const projects = await prisma.project.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: input.skip || 0,
+        take: input.take || 20,
+        include: {
+          _count: {
+            select: { 
+              applications: true 
+            }
+          }
+        }
+      });
+
+      // Map projects to include applicationCount
+      const projectsWithCounts = projects.map(p => ({
+        ...p,
+        applicationCount: p._count?.applications || 0,
+        _count: undefined // Remove _count from final output
+      }));
+
+      const hasMore = (input.skip || 0) + projects.length < total;
+
+      return { projects: projectsWithCounts as any, total, hasMore };
+    } catch (error) {
+      console.error('Error in _getByCampaignPaginated:', error);
+      return { projects: [], total: 0, hasMore: false };
+    }
+  }
+
   async _getIndustryCountByOrganization(input: { 
     organizationId: string;
     filters?: {
@@ -583,6 +677,88 @@ export class ProjectConcept {
         count: project._count.id
       }));
     } catch {
+      return [];
+    }
+  }
+
+
+  async _getIndustryCountByCampaign(input: { 
+    campaignId: string;
+    filters?: {
+      industry?: string;
+      domain?: string;
+      status?: string;
+      difficulty?: string;
+      estimatedHoursMin?: number;
+      estimatedHoursMax?: number;
+    };
+  }): Promise<{ industry: string, count: number }[]> {
+    try {
+      // Get project IDs that belong to the campaign via relationships
+      const relationships = await prisma.relationship.findMany({
+        where: {
+          fromEntityType: 'campaign',
+          fromEntityId: input.campaignId,
+          toEntityType: 'project',
+          relationType: 'contains',
+        }
+      });
+
+      const projectIds = relationships.map(r => r.toEntityId);
+
+      if (projectIds.length === 0) {
+        return [];
+      }
+      
+      // Build where clause with filters
+      const where: any = { 
+        id: { in: projectIds },
+        status: 'active' // Only show active projects to learners
+      };
+      
+      if (input.filters) {
+        if (input.filters.industry) {
+          where.industry = input.filters.industry;
+        }
+        if (input.filters.domain) {
+          where.domain = { contains: input.filters.domain, mode: 'insensitive' };
+        }
+        if (input.filters.status) {
+          where.status = input.filters.status;
+        }
+        if (input.filters.difficulty) {
+          where.difficulty = input.filters.difficulty;
+        }
+        if (input.filters.estimatedHoursMin !== undefined || input.filters.estimatedHoursMax !== undefined) {
+          where.estimatedHours = {};
+          if (input.filters.estimatedHoursMin !== undefined) {
+            where.estimatedHours.gte = input.filters.estimatedHoursMin;
+          }
+          if (input.filters.estimatedHoursMax !== undefined) {
+            where.estimatedHours.lte = input.filters.estimatedHoursMax;
+          }
+        }
+      }
+      
+      const projects = await prisma.project.groupBy({
+        by: ['industry'],
+        where,
+        _count: {
+          id: true,
+        },
+        orderBy: {
+          _count: {
+            id: 'desc', // Most projects first
+          },
+        },
+      });
+      
+      return projects.map(project => ({
+        industry: project.industry,
+        count: project._count.id
+      }));
+    } catch (error) {
+      console.error('Error in _getIndustryCountByCampaign:', error);
       return [];
     }
   }

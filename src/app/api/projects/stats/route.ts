@@ -19,8 +19,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
     
-    if (!session.currentContext?.organizationId) {
-      return NextResponse.json({ success: false, error: 'Bad Request' }, { status: 400 });
+    // Check for either organization or campaign context
+    const organizationId = session.currentContext?.organizationId;
+    const campaignId = session.currentContext?.campaignId;
+    
+    if (!organizationId && !campaignId) {
+      return NextResponse.json({ success: false, error: 'No organization or campaign context' }, { status: 400 });
     }
 
     // Parse filters from query params
@@ -49,10 +53,18 @@ export async function GET(request: NextRequest) {
     }
 
     const projectConcept = new ProjectConcept();
-    const stats = await projectConcept._getIndustryCountByOrganization({ 
-      organizationId: session.currentContext.organizationId,
-      filters: Object.keys(filters).length > 0 ? filters : undefined
-    });
+    
+    // Use campaign-based query if user has campaign context (learners)
+    // Otherwise use organization-based query (managers/educators)
+    const stats = campaignId 
+      ? await projectConcept._getIndustryCountByCampaign({ 
+          campaignId,
+          filters: Object.keys(filters).length > 0 ? filters : undefined
+        })
+      : await projectConcept._getIndustryCountByOrganization({ 
+          organizationId: organizationId!,
+          filters: Object.keys(filters).length > 0 ? filters : undefined
+        });
     console.log("Stats", stats);
     // sort and filter out industries that have count = 0
     const sortedStats = stats.sort((a: { count: number }, b: { count: number }) => b.count - a.count).filter((stat: { count: number }) => stat.count > 0);
